@@ -4,3 +4,4 @@ __pycache__/
 *.pyo
 *.json
 .DS_Store*.deb
+*.deb
