@@ -82,6 +82,10 @@ class JobOffer
     #[ORM\ManyToMany(targetEntity: FileReference::class, inversedBy: 'jobOffers')]
     private Collection $fileReferences;
 
+    #[ORM\ManyToOne(inversedBy: 'jobOffers')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Entreprise $entreprise = null;
+
     public function __construct()
     {
         $this->fileReferences = new ArrayCollection();
@@ -355,6 +359,24 @@ class JobOffer
         if ($this->fileReferences->removeElement($fileReference)) {
             $fileReference->removeJobOffer($this);
         }
+
+        return $this;
+    }
+
+    public function getEntreprise(): ?Entreprise
+    {
+        return $this->entreprise;
+    }
+
+    public function setEntreprise(Entreprise $entreprise): static
+    {
+        if ($this->entreprise === $entreprise) {
+            return $this;
+        }
+
+        $this->entreprise?->removeJobOffer($this);
+        $this->entreprise = $entreprise;
+        $entreprise->addJobOffer($this);
 
         return $this;
     }
