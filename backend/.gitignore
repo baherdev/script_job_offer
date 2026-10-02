@@ -1,0 +1,54 @@
+
+###> symfony/framework-bundle ###
+/.env
+/.env.dev
+/.env.test
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###
+
+###> symfony/asset-mapper ###
+/public/assets/
+/assets/vendor/
+###< symfony/asset-mapper ###
+
+###> project ###
+# Required files that the root .gitignore (*.json) would otherwise ignore
+!/composer.json
+!/assets/controllers.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs / editors
+/.idea/
+/.vscode/
+/.fleet/
+*.swp
+*.swo
+*~
+
+# Node (if a JS toolchain is ever added)
+/node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Local tooling
+/.php-cs-fixer.cache
+/.phpstan.cache/
+/.docker/
+/docker-compose.override.yml
+###< project ###
+
+/bin/
