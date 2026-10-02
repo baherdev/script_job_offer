@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\JobOfferRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -73,6 +75,17 @@ class JobOffer
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $availabilityDate = null;
+
+    /**
+     * @var Collection<int, FileReference>
+     */
+    #[ORM\ManyToMany(targetEntity: FileReference::class, inversedBy: 'jobOffers')]
+    private Collection $fileReferences;
+
+    public function __construct()
+    {
+        $this->fileReferences = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -315,6 +328,33 @@ class JobOffer
     public function setAvailabilityDate(?\DateTimeImmutable $availabilityDate): static
     {
         $this->availabilityDate = $availabilityDate;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, FileReference>
+     */
+    public function getFileReferences(): Collection
+    {
+        return $this->fileReferences;
+    }
+
+    public function addFileReference(FileReference $fileReference): static
+    {
+        if (!$this->fileReferences->contains($fileReference)) {
+            $this->fileReferences->add($fileReference);
+            $fileReference->addJobOffer($this);
+        }
+
+        return $this;
+    }
+
+    public function removeFileReference(FileReference $fileReference): static
+    {
+        if ($this->fileReferences->removeElement($fileReference)) {
+            $fileReference->removeJobOffer($this);
+        }
 
         return $this;
     }

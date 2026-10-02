@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\FileReferenceRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -32,9 +34,16 @@ class FileReference
     #[ORM\Column(options: ['default' => true])]
     private bool $isActif = true;
 
+    /**
+     * @var Collection<int, JobOffer>
+     */
+    #[ORM\ManyToMany(targetEntity: JobOffer::class, mappedBy: 'fileReferences')]
+    private Collection $jobOffers;
+
     public function __construct()
     {
         $this->creationDate = new \DateTimeImmutable();
+        $this->jobOffers = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -110,6 +119,33 @@ class FileReference
     public function setIsActif(bool $isActif): static
     {
         $this->isActif = $isActif;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, JobOffer>
+     */
+    public function getJobOffers(): Collection
+    {
+        return $this->jobOffers;
+    }
+
+    public function addJobOffer(JobOffer $jobOffer): static
+    {
+        if (!$this->jobOffers->contains($jobOffer)) {
+            $this->jobOffers->add($jobOffer);
+            $jobOffer->addFileReference($this);
+        }
+
+        return $this;
+    }
+
+    public function removeJobOffer(JobOffer $jobOffer): static
+    {
+        if ($this->jobOffers->removeElement($jobOffer)) {
+            $jobOffer->removeFileReference($this);
+        }
 
         return $this;
     }
