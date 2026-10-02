@@ -1,0 +1,14 @@
+framework:
+    messenger:
+        transports:
+            async:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    exchange:
+                        name: job_offers
+                        type: direct
+                    queues:
+                        job_offers: ~
+
+        routing:
+            App\Message\JobOfferMessage: async
