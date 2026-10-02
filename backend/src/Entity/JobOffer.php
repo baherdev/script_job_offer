@@ -86,9 +86,16 @@ class JobOffer
     #[ORM\JoinColumn(nullable: false)]
     private ?Entreprise $entreprise = null;
 
+    /**
+     * @var Collection<int, Contact>
+     */
+    #[ORM\ManyToMany(targetEntity: Contact::class, inversedBy: 'jobOffers')]
+    private Collection $contacts;
+
     public function __construct()
     {
         $this->fileReferences = new ArrayCollection();
+        $this->contacts = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -377,6 +384,33 @@ class JobOffer
         $this->entreprise?->removeJobOffer($this);
         $this->entreprise = $entreprise;
         $entreprise->addJobOffer($this);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Contact>
+     */
+    public function getContacts(): Collection
+    {
+        return $this->contacts;
+    }
+
+    public function addContact(Contact $contact): static
+    {
+        if (!$this->contacts->contains($contact)) {
+            $this->contacts->add($contact);
+            $contact->addJobOffer($this);
+        }
+
+        return $this;
+    }
+
+    public function removeContact(Contact $contact): static
+    {
+        if ($this->contacts->removeElement($contact)) {
+            $contact->removeJobOffer($this);
+        }
 
         return $this;
     }
