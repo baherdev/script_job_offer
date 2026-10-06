@@ -1,1 +1,2 @@
-0 */6 * * * root cd /app && python linkedin_job_search.py drupal --location "Switzerland" --results 10 --backend http://nginx/api/job-offers >> /var/log/scraper.log 2>&1
+0 8,13,18 * * * root python3 /app/scrape_from_db.py >> /var/log/scraper.log 2>&1
+
