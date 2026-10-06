@@ -13,7 +13,7 @@ class DashboardController extends AbstractDashboardController
 {
     public function index(): Response
     {
-        return $this->render('@EasyAdmin/page/content.html.twig');
+        return $this->redirectToRoute('admin_job_offer_index');
     }
 
     public function configureDashboard(): Dashboard
@@ -25,6 +25,6 @@ class DashboardController extends AbstractDashboardController
     {
         yield MenuItem::linkToDashboard('Dashboard', null);
         yield MenuItem::section('Offres');
-        yield MenuItem::linkTo('Job Offers', null, JobOfferCrudController::class)->setAction('index');
+        yield MenuItem::linkToRoute('Job Offers', null, 'admin_job_offer_index');
     }
 }
