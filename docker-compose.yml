@@ -123,6 +123,18 @@ services:
     networks:
       - job_scraper_network
 
+# ── Scraper Python (cron toutes les 6h) ──────────────────────────────────────
+scraper:
+  build:
+    context: .
+    dockerfile: docker/scraper/Dockerfile
+  container_name: job_scraper_python
+  restart: unless-stopped
+  depends_on:
+    - nginx
+  networks:
+    - job_scraper_network
+    
 # ── Volumes ───────────────────────────────────────────────────────────────────
 volumes:
   mysql_data:
