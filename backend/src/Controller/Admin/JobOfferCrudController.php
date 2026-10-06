@@ -9,6 +9,9 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextareaField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
+
 
 class JobOfferCrudController extends AbstractCrudController
 {
@@ -25,6 +28,12 @@ class JobOfferCrudController extends AbstractCrudController
             ->setDefaultSort(['createdAt' => 'DESC']);
     }
 
+    public function configureActions(Actions $actions): Actions
+    {
+        return $actions
+            ->disable(Action::NEW, Action::EDIT);
+    }
+    
     public function configureFields(string $pageName): iterable
     {
         yield IdField::new('id')->hideOnForm();
