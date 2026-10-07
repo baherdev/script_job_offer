@@ -18,6 +18,69 @@ Application complète de scraping d'offres d'emploi avec authentification utilis
 
 ---
 
+## Démarrage rapide
+
+### Prérequis
+
+- Docker + Docker Compose
+- Git
+
+### 1. Cloner le repo
+
+```bash
+git clone git@github.com:baherdev/script_job_offer.git
+cd script_job_offer
+```
+
+### 2. Lancer les containers
+
+```bash
+docker compose up -d --build
+```
+
+> ⏳ MySQL prend ~1 min à démarrer sur WSL. Attends que tous les services soient `healthy`.
+
+### 3. Créer la base et lancer les migrations
+
+```bash
+docker compose exec php bin/console doctrine:database:create
+docker compose exec php bin/console doctrine:migrations:migrate
+```
+
+### 4. Créer le premier utilisateur admin
+
+```bash
+docker compose exec php bin/console security:hash-password
+# copie le hash généré
+
+docker compose exec mysql mysql -uroot -proot job_scraper -e \
+  "INSERT INTO user (email, roles, password) VALUES ('admin@example.com', '[\"ROLE_USER\"]', 'HASH_ICI');"
+```
+
+### 5. Ajouter une recherche planifiée
+
+Va dans EasyAdmin → **Search Queries** → **Add** :
+- Keyword : `drupal`
+- Location : `Switzerland`
+- isActive : ✅
+
+Le cron s'en chargera automatiquement. Pour tester immédiatement :
+
+```bash
+docker compose exec scraper python3 /app/scrape_from_db.py
+```
+
+### 6. Accéder à l'application
+
+| Interface       | URL                               | Credentials   |
+|-----------------|-----------------------------------|---------------|
+| Application     | http://localhost:8080/login       | ton email/mdp |
+| EasyAdmin       | http://localhost:8080/admin       | ton email/mdp |
+| RabbitMQ UI     | http://localhost:15672            | guest / guest |
+| Adminer (MySQL) | http://localhost:8081             | root / root   |
+
+---
+
 ## Comment ça fonctionne — Vue d'ensemble
 
 L'application repose sur trois piliers :
@@ -323,69 +386,6 @@ docker compose up -d scraper
 ```
 
 Pour gérer les recherches planifiées : va dans EasyAdmin → **Search Queries** → crée une entrée avec `isActive = true`. Elle sera prise en compte au prochain passage du cron.
-
----
-
-## Démarrage rapide
-
-### Prérequis
-
-- Docker + Docker Compose
-- Git
-
-### 1. Cloner le repo
-
-```bash
-git clone git@github.com:baherdev/script_job_offer.git
-cd script_job_offer
-```
-
-### 2. Lancer les containers
-
-```bash
-docker compose up -d --build
-```
-
-> ⏳ MySQL prend ~1 min à démarrer sur WSL. Attends que tous les services soient `healthy`.
-
-### 3. Créer la base et lancer les migrations
-
-```bash
-docker compose exec php bin/console doctrine:database:create
-docker compose exec php bin/console doctrine:migrations:migrate
-```
-
-### 4. Créer le premier utilisateur admin
-
-```bash
-docker compose exec php bin/console security:hash-password
-# copie le hash généré
-
-docker compose exec mysql mysql -uroot -proot job_scraper -e \
-  "INSERT INTO user (email, roles, password) VALUES ('admin@example.com', '[\"ROLE_USER\"]', 'HASH_ICI');"
-```
-
-### 5. Ajouter une recherche planifiée
-
-Va dans EasyAdmin → **Search Queries** → **Add** :
-- Keyword : `drupal`
-- Location : `Switzerland`
-- isActive : ✅
-
-Le cron s'en chargera automatiquement. Pour tester immédiatement :
-
-```bash
-docker compose exec scraper python3 /app/scrape_from_db.py
-```
-
-### 6. Accéder à l'application
-
-| Interface          | URL                               | Credentials   |
-|--------------------|-----------------------------------|---------------|
-| Application        | http://localhost:8080/login       | ton email/mdp |
-| EasyAdmin          | http://localhost:8080/admin       | ton email/mdp |
-| RabbitMQ UI        | http://localhost:15672            | guest / guest |
-| Adminer (MySQL)    | http://localhost:8081             | root / root   |
 
 ---
 
