@@ -5,7 +5,9 @@ namespace App\Controller\Admin;
 use App\Entity\JobOffer;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextareaField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
@@ -47,6 +49,12 @@ class JobOfferCrudController extends AbstractCrudController
         yield TextareaField::new('description')->hideOnIndex();
         yield TextField::new('url', 'URL');
         yield TextField::new('status', 'Statut');
+        yield ChoiceField::new('sourceId', 'Source')->setChoices(JobOffer::SOURCES);
+        yield IntegerField::new('minimumSalary', 'Salaire minimum')->hideOnIndex();
+        yield ChoiceField::new('minimumSalaryCurrency', 'Devise salaire minimum')->setChoices(JobOffer::CURRENCIES)->hideOnIndex();
+        yield IntegerField::new('maximumSalary', 'Salaire maximum')->hideOnIndex();
+        yield ChoiceField::new('maximumSalaryCurrency', 'Devise salaire maximum')->setChoices(JobOffer::CURRENCIES)->hideOnIndex();
+        yield IntegerField::new('presenceMode', 'Mode de présence');
         yield DateTimeField::new('createdAt', 'Créé le')->hideOnForm();
         yield DateTimeField::new('processedAt', 'Traité le')->hideOnForm();
     }
