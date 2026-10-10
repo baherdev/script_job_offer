@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\SearchQueryRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: SearchQueryRepository::class)]
@@ -29,12 +31,20 @@ class SearchQuery
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'searchQueries')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?User $user = null;
+    #[ORM\JoinColumn(name: 'user_id', nullable: false)]
+    private ?User $createdBy = null;
+
+    /**
+     * @var Collection<int, User>
+     */
+    #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'interestedSearchQueries')]
+    #[ORM\JoinTable(name: 'search_query_interested_user')]
+    private Collection $interestedUsers;
 
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
+        $this->interestedUsers = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -102,14 +112,47 @@ class SearchQuery
         return $this;
     }
 
-    public function getUser(): ?User
+    public function getCreatedBy(): ?User
     {
-        return $this->user;
+        return $this->createdBy;
     }
 
-    public function setUser(?User $user): static
+    public function setCreatedBy(?User $createdBy): static
     {
-        $this->user = $user;
+        $this->createdBy = $createdBy;
+
         return $this;
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    public function getInterestedUsers(): Collection
+    {
+        return $this->interestedUsers;
+    }
+
+    public function addInterestedUser(User $user): static
+    {
+        if (!$this->interestedUsers->contains($user)) {
+            $this->interestedUsers->add($user);
+            $user->addInterestedSearchQuery($this);
+        }
+
+        return $this;
+    }
+
+    public function removeInterestedUser(User $user): static
+    {
+        if ($this->interestedUsers->removeElement($user)) {
+            $user->removeInterestedSearchQuery($this);
+        }
+
+        return $this;
+    }
+
+    public function __toString(): string
+    {
+        return trim(sprintf('%s — %s', $this->keyword, $this->location), ' —');
     }
 }

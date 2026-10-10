@@ -25,7 +25,7 @@ class SearchQueryCrudController extends AbstractCrudController
         $searchQuery = new SearchQuery();
         $user = $this->getUser();
         if ($user instanceof User) {
-            $searchQuery->setUser($user);
+            $searchQuery->setCreatedBy($user);
         }
 
         return $searchQuery;
@@ -46,7 +46,8 @@ class SearchQueryCrudController extends AbstractCrudController
         yield TextField::new('location', 'Lieu');
         yield IntegerField::new('distance', 'Rayon (miles)');
         yield BooleanField::new('isActive', 'Actif');
-        yield AssociationField::new('user', 'Utilisateur')->hideOnForm();
+        yield AssociationField::new('createdBy', 'Créé par')->hideOnForm();
+        yield AssociationField::new('interestedUsers', 'Intéressés');
         yield DateTimeField::new('createdAt', 'Créé le')->hideOnForm();
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -30,6 +32,24 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     #[ORM\Column]
     private ?string $password = null;
+
+    /**
+     * @var Collection<int, SearchQuery>
+     */
+    #[ORM\OneToMany(targetEntity: SearchQuery::class, mappedBy: 'createdBy')]
+    private Collection $searchQueries;
+
+    /**
+     * @var Collection<int, SearchQuery>
+     */
+    #[ORM\ManyToMany(targetEntity: SearchQuery::class, mappedBy: 'interestedUsers')]
+    private Collection $interestedSearchQueries;
+
+    public function __construct()
+    {
+        $this->searchQueries = new ArrayCollection();
+        $this->interestedSearchQueries = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -102,8 +122,84 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $data = (array) $this;
         $data["\0" . self::class . "\0password"] = hash('crc32c', $this->password);
-        
+        unset(
+            $data["\0" . self::class . "\0searchQueries"],
+            $data["\0" . self::class . "\0interestedSearchQueries"],
+        );
+
         return $data;
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->__construct();
+
+        foreach ($data as $key => $value) {
+            $property = strrchr($key, "\0");
+            $property = $property === false ? $key : substr($property, 1);
+            $this->$property = $value;
+        }
+    }
+
+    /**
+     * @return Collection<int, SearchQuery>
+     */
+    public function getSearchQueries(): Collection
+    {
+        return $this->searchQueries;
+    }
+
+    public function addSearchQuery(SearchQuery $searchQuery): static
+    {
+        if (!$this->searchQueries->contains($searchQuery)) {
+            $this->searchQueries->add($searchQuery);
+            $searchQuery->setCreatedBy($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSearchQuery(SearchQuery $searchQuery): static
+    {
+        if ($this->searchQueries->removeElement($searchQuery)) {
+            if ($searchQuery->getCreatedBy() === $this) {
+                $searchQuery->setCreatedBy(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, SearchQuery>
+     */
+    public function getInterestedSearchQueries(): Collection
+    {
+        return $this->interestedSearchQueries;
+    }
+
+    public function addInterestedSearchQuery(SearchQuery $searchQuery): static
+    {
+        if (!$this->interestedSearchQueries->contains($searchQuery)) {
+            $this->interestedSearchQueries->add($searchQuery);
+            $searchQuery->addInterestedUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeInterestedSearchQuery(SearchQuery $searchQuery): static
+    {
+        if ($this->interestedSearchQueries->removeElement($searchQuery)) {
+            $searchQuery->removeInterestedUser($this);
+        }
+
+        return $this;
+    }
+
+    public function __toString(): string
+    {
+        return (string) $this->email;
     }
 
     #[\Deprecated]
