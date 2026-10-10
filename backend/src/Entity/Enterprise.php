@@ -39,9 +39,16 @@ class Enterprise
     #[ORM\OneToMany(targetEntity: JobOffer::class, mappedBy: 'enterprise')]
     private Collection $jobOffers;
 
+    /**
+     * @var Collection<int, Contact>
+     */
+    #[ORM\OneToMany(targetEntity: Contact::class, mappedBy: 'enterprise')]
+    private Collection $contacts;
+
     public function __construct()
     {
         $this->jobOffers = new ArrayCollection();
+        $this->contacts = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -144,6 +151,35 @@ class Enterprise
         if ($this->jobOffers->removeElement($jobOffer)) {
             if ($jobOffer->getEnterprise() === $this) {
                 $jobOffer->setEnterprise(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Contact>
+     */
+    public function getContacts(): Collection
+    {
+        return $this->contacts;
+    }
+
+    public function addContact(Contact $contact): static
+    {
+        if (!$this->contacts->contains($contact)) {
+            $this->contacts->add($contact);
+            $contact->setEnterprise($this);
+        }
+
+        return $this;
+    }
+
+    public function removeContact(Contact $contact): static
+    {
+        if ($this->contacts->removeElement($contact)) {
+            if ($contact->getEnterprise() === $this) {
+                $contact->setEnterprise(null);
             }
         }
 
