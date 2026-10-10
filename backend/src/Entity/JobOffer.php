@@ -38,6 +38,10 @@ class JobOffer
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $processedAt = null;
 
+    #[ORM\ManyToOne(inversedBy: 'jobOffers')]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Enterprise $enterprise = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -135,6 +139,18 @@ class JobOffer
     public function setProcessedAt(?\DateTimeImmutable $processedAt): static
     {
         $this->processedAt = $processedAt;
+
+        return $this;
+    }
+
+    public function getEnterprise(): ?Enterprise
+    {
+        return $this->enterprise;
+    }
+
+    public function setEnterprise(?Enterprise $enterprise): static
+    {
+        $this->enterprise = $enterprise;
 
         return $this;
     }

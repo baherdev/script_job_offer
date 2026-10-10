@@ -4,6 +4,7 @@ namespace App\Controller\Admin;
 
 use App\Entity\JobOffer;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
+use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextareaField;
@@ -39,6 +40,7 @@ class JobOfferCrudController extends AbstractCrudController
         yield IdField::new('id')->hideOnForm();
         yield TextField::new('title', 'Titre');
         yield TextField::new('company', 'Entreprise');
+        yield AssociationField::new('enterprise', 'Fiche entreprise');
         yield TextField::new('location', 'Lieu');
         yield TextareaField::new('description')->hideOnIndex();
         yield TextField::new('url', 'URL');
