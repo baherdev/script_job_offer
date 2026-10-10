@@ -50,9 +50,16 @@ class JobOffer
     #[ORM\ManyToMany(targetEntity: Contact::class, mappedBy: 'jobOffers')]
     private Collection $contacts;
 
+    /**
+     * @var Collection<int, JobApplication>
+     */
+    #[ORM\OneToMany(targetEntity: JobApplication::class, mappedBy: 'jobOffer')]
+    private Collection $jobApplications;
+
     public function __construct()
     {
         $this->contacts = new ArrayCollection();
+        $this->jobApplications = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -190,6 +197,35 @@ class JobOffer
     {
         if ($this->contacts->removeElement($contact)) {
             $contact->removeJobOffer($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, JobApplication>
+     */
+    public function getJobApplications(): Collection
+    {
+        return $this->jobApplications;
+    }
+
+    public function addJobApplication(JobApplication $jobApplication): static
+    {
+        if (!$this->jobApplications->contains($jobApplication)) {
+            $this->jobApplications->add($jobApplication);
+            $jobApplication->setJobOffer($this);
+        }
+
+        return $this;
+    }
+
+    public function removeJobApplication(JobApplication $jobApplication): static
+    {
+        if ($this->jobApplications->removeElement($jobApplication)) {
+            if ($jobApplication->getJobOffer() === $this) {
+                $jobApplication->setJobOffer(null);
+            }
         }
 
         return $this;

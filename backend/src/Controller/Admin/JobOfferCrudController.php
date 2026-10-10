@@ -42,6 +42,7 @@ class JobOfferCrudController extends AbstractCrudController
         yield TextField::new('company', 'Entreprise');
         yield AssociationField::new('enterprise', 'Fiche entreprise');
         yield AssociationField::new('contacts', 'Contacts')->hideOnIndex();
+        yield AssociationField::new('jobApplications', 'Candidatures')->hideOnIndex();
         yield TextField::new('location', 'Lieu');
         yield TextareaField::new('description')->hideOnIndex();
         yield TextField::new('url', 'URL');

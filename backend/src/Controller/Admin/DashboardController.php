@@ -26,6 +26,7 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkToDashboard('Dashboard', null);
         yield MenuItem::section('Offres');
         yield MenuItem::linkToRoute('Job Offers', null, 'admin_job_offer_index');
+        yield MenuItem::linkToRoute('Job Applications', null, 'admin_job_application_index');
         yield MenuItem::linkToRoute('Enterprises', null, 'admin_enterprise_index');
         yield MenuItem::linkToRoute('Contacts', null, 'admin_contact_index');
         yield MenuItem::section('Fichiers');

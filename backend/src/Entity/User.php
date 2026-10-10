@@ -45,10 +45,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\ManyToMany(targetEntity: SearchQuery::class, mappedBy: 'interestedUsers')]
     private Collection $interestedSearchQueries;
 
+    /**
+     * @var Collection<int, JobApplication>
+     */
+    #[ORM\OneToMany(targetEntity: JobApplication::class, mappedBy: 'user')]
+    private Collection $jobApplications;
+
     public function __construct()
     {
         $this->searchQueries = new ArrayCollection();
         $this->interestedSearchQueries = new ArrayCollection();
+        $this->jobApplications = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -125,6 +132,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         unset(
             $data["\0" . self::class . "\0searchQueries"],
             $data["\0" . self::class . "\0interestedSearchQueries"],
+            $data["\0" . self::class . "\0jobApplications"],
         );
 
         return $data;
@@ -192,6 +200,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if ($this->interestedSearchQueries->removeElement($searchQuery)) {
             $searchQuery->removeInterestedUser($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, JobApplication>
+     */
+    public function getJobApplications(): Collection
+    {
+        return $this->jobApplications;
+    }
+
+    public function addJobApplication(JobApplication $jobApplication): static
+    {
+        if (!$this->jobApplications->contains($jobApplication)) {
+            $this->jobApplications->add($jobApplication);
+            $jobApplication->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeJobApplication(JobApplication $jobApplication): static
+    {
+        if ($this->jobApplications->removeElement($jobApplication)) {
+            if ($jobApplication->getUser() === $this) {
+                $jobApplication->setUser(null);
+            }
         }
 
         return $this;
