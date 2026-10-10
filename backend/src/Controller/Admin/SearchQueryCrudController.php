@@ -3,6 +3,7 @@
 namespace App\Controller\Admin;
 
 use App\Entity\SearchQuery;
+use App\Entity\User;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
@@ -17,6 +18,17 @@ class SearchQueryCrudController extends AbstractCrudController
     public static function getEntityFqcn(): string
     {
         return SearchQuery::class;
+    }
+
+    public function createEntity(string $entityFqcn): SearchQuery
+    {
+        $searchQuery = new SearchQuery();
+        $user = $this->getUser();
+        if ($user instanceof User) {
+            $searchQuery->setUser($user);
+        }
+
+        return $searchQuery;
     }
 
     public function configureCrud(Crud $crud): Crud
