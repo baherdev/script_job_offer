@@ -53,8 +53,10 @@ docker compose exec php bin/console doctrine:migrations:migrate
 docker compose exec php bin/console security:hash-password
 # copie le hash généré
 
-docker compose exec mysql mysql -uroot -proot job_scraper -e \
-  "INSERT INTO user (email, roles, password) VALUES ('admin@example.com', '[\"ROLE_USER\"]', 'HASH_ICI');"
+docker compose exec mysql mysql -uroot -proot job_scraper <<'SQL'
+INSERT INTO user (email, roles, password) 
+VALUES ('admin@example.com', '[\"ROLE_USER\"]', 'HASH_ICI');
+SQL 
 ```
 
 ### 5. Ajouter une recherche planifiée
