@@ -130,6 +130,8 @@ services:
       dockerfile: docker/scraper/Dockerfile
     container_name: job_scraper_python
     restart: unless-stopped
+    volumes:
+      - ./scripts:/app
     depends_on:
       - nginx
     networks:
