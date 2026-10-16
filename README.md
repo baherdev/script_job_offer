@@ -368,6 +368,14 @@ Pour tester manuellement :
 docker compose exec scraper python3 /app/scrape_from_db.py
 ```
 
+### `scripts/linkedin_job_description.py` — Description de la première offre
+
+Appelle `GET /api/job-offers/without-description`, prend la première offre, ouvre son URL LinkedIn et extrait la description : d'abord le `div` dont l'id commence par `JobDetails_AboutTheJob`, sinon `div.description__text` sur la page publique. Le texte est ensuite enregistré avec `PUT /api/job-offers` (`id` et `description`). Depuis le container `scraper`, l'URL par défaut `http://nginx/api/job-offers/without-description` passe par nginx ; `127.0.0.1` désigne le container lui-même.
+
+```bash
+docker compose exec scraper python3 /app/linkedin_job_description.py
+```
+
 ---
 
 ## Cron automatique (container Docker)
