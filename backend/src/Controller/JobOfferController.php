@@ -77,4 +77,42 @@ class JobOfferController extends AbstractController
 
         return $this->json($offers);
     }
+
+    #[Route('/job-offers', name: 'job_offers_update_description', methods: ['PUT'])]
+    public function updateDescription(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return $this->json(['error' => 'Invalid JSON'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!isset($data['id'], $data['description'])) {
+            return $this->json(['error' => 'Fields "id" and "description" are required'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $errors = [];
+        if (!is_numeric($data['id'])) {
+            $errors[] = 'id must be numeric';
+        }
+        if (!is_string($data['description'])) {
+            $errors[] = 'description must be a string';
+        }
+        if ($errors !== []) {
+            return $this->json(['error' => 'Validation failed', 'details' => $errors], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $offer = $this->jobOfferRepository->find((int) $data['id']);
+        if (!$offer instanceof JobOffer) {
+            return $this->json(['error' => 'Job offer not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $offer->setDescription($data['description']);
+        $this->jobOfferRepository->getEntityManager()->flush();
+
+        return $this->json([
+            'id'          => $offer->getId(),
+            'description' => $offer->getDescription(),
+        ]);
+    }
 }
