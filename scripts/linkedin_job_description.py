@@ -8,6 +8,7 @@ import argparse
 import requests
 from bs4 import BeautifulSoup
 from typing import Dict, Optional
+from urllib.parse import urlparse, urlunparse
 
 
 class LinkedInJobDescriptionFetcher:
@@ -76,6 +77,30 @@ class LinkedInJobDescriptionFetcher:
         print(description)
         return description
 
+    def update_description(self, update_url: str, offer_id: int, description: str) -> bool:
+        print(f"\n📍 PUT {update_url}")
+        try:
+            response = requests.put(
+                update_url,
+                json={'id': offer_id, 'description': description},
+                timeout=15,
+            )
+        except requests.RequestException as e:
+            print(f"❌ Impossible de joindre le backend: {e}")
+            return False
+
+        if response.status_code != 200:
+            print(f"❌ Backend HTTP {response.status_code}: {response.text}")
+            return False
+
+        print(f"✅ Description enregistrée pour l'offre [{offer_id}]")
+        return True
+
+
+def job_offers_update_url(backend_url: str) -> str:
+    parsed = urlparse(backend_url)
+    return urlunparse(parsed._replace(path='/api/job-offers', query='', fragment=''))
+
 
 def main():
     parser = argparse.ArgumentParser(description='Extrait la description LinkedIn de la première offre sans description')
@@ -91,7 +116,11 @@ def main():
     if offer is None:
         return
 
-    fetcher.extract_description(offer.get('url'))
+    description = fetcher.extract_description(offer.get('url'))
+    if description is None or offer.get('id') is None:
+        return
+
+    fetcher.update_description(job_offers_update_url(args.backend), offer['id'], description)
 
 
 if __name__ == "__main__":
