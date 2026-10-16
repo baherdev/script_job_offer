@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\Entity\JobOffer;
+use App\Repository\JobOfferRepository;
 use App\Service\JobOfferService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -14,6 +16,7 @@ class JobOfferController extends AbstractController
 {
     public function __construct(
         private readonly JobOfferService $jobOfferService,
+        private readonly JobOfferRepository $jobOfferRepository,
     ) {}
 
     #[Route('/job-offers', name: 'job_offers_create', methods: ['POST'])]
@@ -45,5 +48,33 @@ class JobOfferController extends AbstractController
             'message'    => sprintf('%d offer(s) dispatched to the queue.', $count),
             'dispatched' => $count,
         ], Response::HTTP_ACCEPTED);
+    }
+
+    #[Route('/job-offers/without-description', name: 'job_offers_without_description', methods: ['GET'])]
+    public function listWithoutDescription(): JsonResponse
+    {
+        $offers = array_map(
+            fn (JobOffer $offer): array => [
+                'id'                    => $offer->getId(),
+                'title'                 => $offer->getTitle(),
+                'company'               => $offer->getCompany(),
+                'location'              => $offer->getLocation(),
+                'description'           => $offer->getDescription(),
+                'url'                   => $offer->getUrl(),
+                'status'                => $offer->getStatus(),
+                'sourceId'              => $offer->getSourceId(),
+                'minimumSalary'         => $offer->getMinimumSalary(),
+                'minimumSalaryCurrency' => $offer->getMinimumSalaryCurrency(),
+                'maximumSalary'         => $offer->getMaximumSalary(),
+                'maximumSalaryCurrency' => $offer->getMaximumSalaryCurrency(),
+                'presenceMode'          => $offer->getPresenceMode(),
+                'createdAt'             => $offer->getCreatedAt()?->format(\DateTimeInterface::ATOM),
+                'processedAt'           => $offer->getProcessedAt()?->format(\DateTimeInterface::ATOM),
+                'enterpriseId'          => $offer->getEnterprise()?->getId(),
+            ],
+            $this->jobOfferRepository->findWithoutDescription(),
+        );
+
+        return $this->json($offers);
     }
 }

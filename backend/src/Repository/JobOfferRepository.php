@@ -16,6 +16,19 @@ class JobOfferRepository extends ServiceEntityRepository
         parent::__construct($registry, JobOffer::class);
     }
 
+    /**
+     * @return JobOffer[]
+     */
+    public function findWithoutDescription(): array
+    {
+        return $this->createQueryBuilder('jobOffer')
+            ->andWhere('jobOffer.description IS NULL OR TRIM(jobOffer.description) = :empty')
+            ->setParameter('empty', '')
+            ->orderBy('jobOffer.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
 //    /**
 //     * @return JobOffer[] Returns an array of JobOffer objects
 //     */
