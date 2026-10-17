@@ -22,3 +22,11 @@ RUN composer dump-autoload --optimize
 
 # Donne les droits à www-data sur les dossiers Symfony
 RUN chown -R www-data:www-data var/
+
+COPY scripts/requirements.txt /tmp/scraper-requirements.txt
+RUN apt-get update && apt-get install -y python3 python3-venv \
+    && python3 -m venv /opt/scraper \
+    && /opt/scraper/bin/pip install --no-cache-dir -r /tmp/scraper-requirements.txt \
+    && printf '%s\n' '#!/bin/sh' 'exec /opt/scraper/bin/python "$@"' > /usr/local/bin/python \
+    && chmod +x /usr/local/bin/python \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*

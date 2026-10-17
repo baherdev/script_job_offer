@@ -291,7 +291,7 @@ Lancement : python /app/linkedin_job_search.py --backend http://nginx/api/job-of
 [OK] Scraping terminé.
 ```
 
-> Note : `python: not found` est normal dans le container PHP. Cette commande sert uniquement à vérifier la logique. Le vrai scraping est effectué par le container `scraper`.
+Le container PHP fournit `python` et monte `./scripts` sur `/app`, donc cette commande lance réellement `linkedin_job_search.py`. Après une modification du `Dockerfile` PHP : `docker compose build php && docker compose up -d php`.
 
 ---
 

@@ -9,6 +9,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./backend:/var/www/html
+      - ./scripts:/app
       - php_logs:/var/log
     depends_on:
       mysql:
