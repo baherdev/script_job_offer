@@ -459,11 +459,38 @@ Variables d'environnement supportées :
 | `DB_NAME`  | `job_scraper`  | Base de données          |
 | `CV_PATH`  | `/app/cv.txt`  | Chemin vers le CV texte  |
 
-### `scripts/generer_lettre.py` — Module RAG (TF-IDF)
+### `scripts/cv_matcher.py` — Module RAG (TF-IDF)
 
-Module Python contenant le pipeline de traitement linguistique : découpage du CV en segments, extraction de mots-clés par TF-IDF, indexation et calcul de similarité cosinus. Importé par `score_offers.py`.
+Module Python contenant le pipeline de traitement linguistique : découpage du CV en segments, extraction de mots-clés par TF-IDF, indexation et calcul de similarité cosinus. Importé par `score_offers.py` et `generer_lettre.py`.
 
 > Ce fichier est versionné car il contient uniquement la logique algorithmique, sans données personnelles.
+
+### `scripts/generer_lettre.py` — Génération de lettre de motivation via Ollama
+
+Génère une lettre de motivation pour une offre en base. Utilise le pipeline RAG de `cv_matcher.py` pour extraire les mots-clés pertinents, puis appelle Ollama en local pour rédiger la lettre.
+
+```bash
+# Générer la lettre pour l'offre 21
+docker compose exec scraper python3 /app/generer_lettre.py --offer-id 21
+
+# Avec un modèle différent
+docker compose exec scraper python3 /app/generer_lettre.py --offer-id 21 --model llama3.2
+```
+
+| Argument      | Défaut                         | Description                        |
+|---------------|--------------------------------|------------------------------------|
+| `--offer-id`  | — (obligatoire)                | ID de l'offre en base              |
+| `--cv`        | `/app/cv.txt`                  | Chemin vers le CV texte            |
+| `--model`     | `deepseek-r1:7b`               | Modèle Ollama à utiliser           |
+
+Variables d'environnement :
+
+| Variable      | Défaut                                            |
+|---------------|---------------------------------------------------|
+| `OLLAMA_URL`  | `http://host.docker.internal:11434/api/generate`  |
+| `OLLAMA_MODEL`| `deepseek-r1:7b`                                  |
+
+> Ollama doit tourner sur la machine hôte. Depuis Docker sur WSL, `host.docker.internal` pointe automatiquement vers Windows.
 
 ---
 
@@ -537,7 +564,8 @@ script_job_offer/
 │   ├── linkedin_job_search.py                      # Scraper LinkedIn (argparse)
 │   ├── scrape_from_db.py                           # Orchestrateur cron → MySQL → scraper
 │   ├── score_offers.py                             # Scoring RAG CV↔offre (TF-IDF)
-│   ├── generer_lettre.py                           # Pipeline TF-IDF (module RAG)
+│   ├── cv_matcher.py                               # Pipeline TF-IDF (module RAG, importé par score et lettre)
+│   ├── generer_lettre.py                           # Génère une lettre de motivation via Ollama (--offer-id)
 │   ├── cv.txt                                      # ← PERSONNEL, non versionné (.gitignore)
 │   └── requirements.txt                            # pymysql, numpy, scikit-learn, requests
 ├── docker-compose.yml
@@ -595,6 +623,9 @@ docker compose exec scraper python3 /app/score_offers.py
 
 # Scorer sans écrire en base (dry-run)
 docker compose exec scraper python3 /app/score_offers.py --dry-run
+
+# Générer une lettre de motivation pour une offre
+docker compose exec scraper python3 /app/generer_lettre.py --offer-id 42
 
 # Rescorer toutes les offres (réinitialise les scores en base, puis relance)
 docker compose exec mysql mysql -uroot -proot job_scraper \

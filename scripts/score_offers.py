@@ -4,7 +4,7 @@ score_offers.py — Score RAG des offres LinkedIn par rapport au CV.
 
 Lit les offres sans score (match_score IS NULL) depuis MySQL,
 calcule la couverture CV ↔ offre avec le même pipeline TF-IDF que
-generer_lettre.py, et écrit match_score / matched_keywords / missing_keywords
+cv_matcher.py, et écrit match_score / matched_keywords / missing_keywords
 en base.
 
 Usage :
@@ -21,11 +21,11 @@ import sys
 
 import pymysql
 
-# Import du pipeline depuis generer_lettre.py (même répertoire /app/)
+# Import du pipeline depuis cv_matcher.py (même répertoire /app/)
 try:
-    from generer_lettre import decouper, extraire_mots_cles, IndexCV, associer, lire
+    from cv_matcher import decouper, extraire_mots_cles, IndexCV, associer, lire
 except ImportError:
-    print("ERREUR : generer_lettre.py introuvable dans le répertoire courant.", file=sys.stderr)
+    print("ERREUR : cv_matcher.py introuvable dans le répertoire courant.", file=sys.stderr)
     sys.exit(1)
 
 # ── Connexion MySQL ────────────────────────────────────────────────────────── #

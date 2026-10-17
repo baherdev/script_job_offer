@@ -131,6 +131,7 @@ services:
     container_name: job_scraper_python
     restart: unless-stopped
     volumes:
+      - ./scripts:/app
       - ./scripts/cv.txt:/app/cv.txt:ro
     depends_on:
       - nginx
