@@ -16,6 +16,19 @@ class SearchQueryRepository extends ServiceEntityRepository
         parent::__construct($registry, SearchQuery::class);
     }
 
+    /**
+     * @return SearchQuery[]
+     */
+    public function findActive(): array
+    {
+        return $this->createQueryBuilder('searchQuery')
+            ->andWhere('searchQuery.isActive = :active')
+            ->setParameter('active', true)
+            ->orderBy('searchQuery.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
 //    /**
 //     * @return SearchQuery[] Returns an array of SearchQuery objects
 //     */

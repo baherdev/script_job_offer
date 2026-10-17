@@ -207,6 +207,16 @@ Point d'entrée de l'API REST. Accessible sans authentification (`/api` est publ
 |------------------------|---------|--------|-------------------------------------------------|
 | `POST /api/job-offers` | POST    | PUBLIC | Reçoit les offres JSON, dispatche dans RabbitMQ |
 
+### `SearchQueryController` — `src/Controller/SearchQueryController.php`
+
+Liste les requêtes de recherche actives. Accessible sans authentification (`/api` est public dans `security.yaml`).
+
+| Route                            | Méthode | Accès  | Description                                                                 |
+|----------------------------------|---------|--------|-----------------------------------------------------------------------------|
+| `GET /api/search-queries/active` | GET     | PUBLIC | Retourne les `SearchQuery` dont `isActive` vaut `true`, triées par `id`    |
+
+Chaque élément contient `id`, `keyword`, `location`, `distance`, `isActive`, `createdAt` (format ATOM) et `createdById`.
+
 ### `SecurityController` — `src/Controller/SecurityController.php`
 
 Généré par `make:security:form-login`. Gère la page de connexion.
