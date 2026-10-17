@@ -105,45 +105,45 @@ L'application repose sur quatre piliers :
 ## Architecture détaillée
 
 ```
-┌──────────────────────────────────────────────────┐
-│  Container scraper (Python + cron)               │
-│                                                  │
-│  scrape_from_db.py  ← lit SearchQuery en MySQL   │
-│       │  lance linkedin_job_search.py par query  │
-│       │  POST /api/job-offers                    │
-│       │                                          │
-│  score_offers.py    ← 5 min après le scraping    │
-│       │  lit job_offer WHERE match_score IS NULL │
-│       │  pipeline TF-IDF (generer_lettre.py)     │
-│       └─ écrit match_score, matched/missing kw   │
-└───────┼──────────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────┐
-│     JobOfferController      │  ← reçoit le JSON, valide les données
-│  src/Controller/            │
-└────────────┬────────────────┘
-             │  dispatch(JobOfferMessage)
-             ▼
-┌─────────────────────────────┐
-│      JobOfferService        │  ← crée un message par offre
-│  src/Service/               │
-└────────────┬────────────────┘
-             │  via Symfony Messenger
-             ▼
-┌─────────────────────────────┐
-│         RabbitMQ            │  ← stocke les messages dans la file
-│  exchange: job_offers       │    (persistant, survit aux redémarrages)
-└────────────┬────────────────┘
-             │  consommé par le worker (processus séparé)
-             ▼
-┌─────────────────────────────┐
-│  JobOfferMessageHandler     │  ← crée l'entité JobOffer
-│  src/MessageHandler/        │     et la persiste en base
-└────────────┬────────────────┘
-             │
-             ▼
-        MySQL (table: job_offer)
+┌──────────────────────────────────────────────────────┐
+│  Container scraper (Python + cron)                   │
+│                                                      │
+│  scrape_from_db.py  ← lit SearchQuery en MySQL       │
+│       │  lance linkedin_job_search.py par query      │
+│       │  POST /api/job-offers ──────────────────┐    │
+│                                                 │    │
+│  score_offers.py (+5 min)                       │    │
+│       │  SELECT job_offer WHERE score IS NULL ──┼──┐ │
+│       │  pipeline TF-IDF (generer_lettre.py)    │  │ │
+│       │  UPDATE job_offer SET match_score… ─────┼──┼─┼──┐
+└───────┼─────────────────────────────────────────┼──┼─┘  │
+        │ POST /api/job-offers                    │  │    │
+        ▼                                         │  │    │
+┌─────────────────────────────┐                  │  │    │
+│     JobOfferController      │                  │  │    │
+│  reçoit le JSON, valide     │                  │  │    │
+└────────────┬────────────────┘                  │  │    │
+             │  dispatch(JobOfferMessage)         │  │    │
+             ▼                                   │  │    │
+┌─────────────────────────────┐                  │  │    │
+│      JobOfferService        │                  │  │    │
+│  crée un message par offre  │                  │  │    │
+└────────────┬────────────────┘                  │  │    │
+             │  via Symfony Messenger             │  │    │
+             ▼                                   │  │    │
+┌─────────────────────────────┐                  │  │    │
+│         RabbitMQ            │                  │  │    │
+│  exchange: job_offers       │                  │  │    │
+└────────────┬────────────────┘                  │  │    │
+             │  consommé par le worker            │  │    │
+             ▼                                   ▼  ▼    │
+┌─────────────────────────────┐   ┌──────────────────────┴──┐
+│  JobOfferMessageHandler     │   │        MySQL             │
+│  crée l'entité JobOffer     │──▶│   table: job_offer       │◀──┘
+│  et la persiste en base     │   │   (match_score mis à jour│
+└─────────────────────────────┘   │    directement par       │
+                                  │    score_offers.py)      │
+                                  └──────────────────────────┘
 ```
 
 ---
