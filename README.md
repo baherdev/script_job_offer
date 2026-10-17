@@ -480,6 +480,18 @@ curl -X POST http://localhost:8080/api/job-offers \
 
 ---
 
+## Tests
+
+Le test d'intégration `tests/Integration/CreateJobOfferCreatesJobApplicationTest.php` reproduit la création d'une offre via `POST /api/job-offers`. Il vérifie que l'offre est liée à la recherche, puis qu'une candidature est créée pour l'utilisateur propriétaire de cette recherche. Les files `async` et `job_applications` sont en mémoire, et Doctrine utilise la base `job_scraper_test` : le worker et la base de développement ne sont pas touchés.
+
+La stack Docker doit être démarrée (au moins `php` et `mysql`).
+
+```bash
+docker compose exec -e APP_ENV=test php php bin/phpunit tests/Integration/CreateJobOfferCreatesJobApplicationTest.php
+```
+
+---
+
 ## Commandes utiles
 
 ```bash
