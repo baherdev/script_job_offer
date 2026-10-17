@@ -9,6 +9,15 @@ framework:
                         type: direct
                     queues:
                         job_offers: ~
+            job_applications:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    exchange:
+                        name: job_applications
+                        type: direct
+                    queues:
+                        job_applications: ~
 
         routing:
             App\Message\JobOfferMessage: async
+            App\Message\JobApplicationMessage: job_applications

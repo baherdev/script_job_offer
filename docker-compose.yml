@@ -30,7 +30,7 @@ services:
       dockerfile: docker/php/Dockerfile
     container_name: job_scraper_worker
     restart: unless-stopped
-    command: php bin/console messenger:consume async --limit=50 --time-limit=3600 -vv
+    command: php bin/console messenger:consume async job_applications --limit=50 --time-limit=3600 -vv
     volumes:
       - ./backend:/var/www/html
     depends_on:
