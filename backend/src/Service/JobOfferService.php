@@ -21,6 +21,7 @@ class JobOfferService
                 location:    $offer['location'] ?? null,
                 description: $offer['description'] ?? null,
                 url:         $offer['url'] ?? null,
+                searchQueryId: isset($offer['searchQueryId']) ? (int) $offer['searchQueryId'] : null,
             ));
             $count++;
         }

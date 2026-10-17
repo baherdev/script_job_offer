@@ -3,6 +3,7 @@
 namespace App\MessageHandler;
 
 use App\Entity\JobOffer;
+use App\Entity\SearchQuery;
 use App\Message\JobOfferMessage;
 use App\Repository\JobOfferRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -19,21 +20,39 @@ class JobOfferMessageHandler
     public function __invoke(JobOfferMessage $message): void
     {
         $url = $message->getUrl();
-        if (is_string($url) && $url !== '' && $this->jobOfferRepository->findOneBy(['url' => $url]) !== null) {
+        $offer = is_string($url) && $url !== ''
+            ? $this->jobOfferRepository->findOneBy(['url' => $url])
+            : null;
+
+        if (!$offer instanceof JobOffer) {
+            $offer = new JobOffer();
+            $offer->setTitle($message->getTitle());
+            $offer->setCompany($message->getCompany());
+            $offer->setLocation($message->getLocation());
+            $offer->setDescription($message->getDescription());
+            $offer->setUrl($message->getUrl());
+            $offer->setStatus('processed');
+            $offer->setCreatedAt(new \DateTimeImmutable());
+            $offer->setProcessedAt(new \DateTimeImmutable());
+            $this->em->persist($offer);
+        }
+
+        $this->attachSearchQuery($offer, $message);
+        $this->em->flush();
+    }
+
+    private function attachSearchQuery(JobOffer $offer, JobOfferMessage $message): void
+    {
+        $searchQueryId = $message->getSearchQueryId();
+        if ($searchQueryId === null) {
             return;
         }
 
-        $offer = new JobOffer();
-        $offer->setTitle($message->getTitle());
-        $offer->setCompany($message->getCompany());
-        $offer->setLocation($message->getLocation());
-        $offer->setDescription($message->getDescription());
-        $offer->setUrl($message->getUrl());
-        $offer->setStatus('processed');
-        $offer->setCreatedAt(new \DateTimeImmutable());
-        $offer->setProcessedAt(new \DateTimeImmutable());
+        $searchQuery = $this->em->find(SearchQuery::class, $searchQueryId);
+        if (!$searchQuery instanceof SearchQuery) {
+            return;
+        }
 
-        $this->em->persist($offer);
-        $this->em->flush();
+        $offer->addSearchQuery($searchQuery);
     }
 }

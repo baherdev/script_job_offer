@@ -10,6 +10,7 @@ final class JobOfferMessage
         private readonly ?string $location = null,
         private readonly ?string $description = null,
         private readonly ?string $url = null,
+        private readonly ?int $searchQueryId = null,
     ) {}
 
     public function getTitle(): string { return $this->title; }
@@ -17,4 +18,5 @@ final class JobOfferMessage
     public function getLocation(): ?string { return $this->location; }
     public function getDescription(): ?string { return $this->description; }
     public function getUrl(): ?string { return $this->url; }
+    public function getSearchQueryId(): ?int { return $this->searchQueryId; }
 }

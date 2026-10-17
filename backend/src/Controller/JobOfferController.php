@@ -36,6 +36,9 @@ class JobOfferController extends AbstractController
         foreach ($data['offers'] as $i => $offer) {
             if (empty($offer['title']))   $errors[] = "offers[$i].title is required";
             if (empty($offer['company'])) $errors[] = "offers[$i].company is required";
+            if (isset($offer['searchQueryId']) && !is_numeric($offer['searchQueryId'])) {
+                $errors[] = "offers[$i].searchQueryId must be numeric";
+            }
         }
 
         if (!empty($errors)) {

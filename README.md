@@ -462,7 +462,8 @@ curl -X POST http://localhost:8080/api/job-offers \
         "company": "Acme Corp",
         "location": "Genève, Suisse",
         "description": "Poste senior Drupal 10...",
-        "url": "https://example.com/job/123"
+        "url": "https://example.com/job/123",
+        "searchQueryId": 1
       }
     ]
   }'

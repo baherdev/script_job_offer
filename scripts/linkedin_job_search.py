@@ -166,6 +166,7 @@ def main():
         print("ℹ️  Aucune recherche active.")
         return
 
+    linkedin_request_count = 0
     for query in queries:
         if not isinstance(query, dict):
             print(f"⚠️  Recherche ignorée : format inattendu ({query!r})")
@@ -178,7 +179,13 @@ def main():
 
         location = str(query.get('location') or 'Switzerland')
         distance = query.get('distance')
+        if linkedin_request_count > 0:
+            print("⏳ Pause de 10 secondes avant la prochaine requête LinkedIn.")
+            time.sleep(10)
         results = searcher.search_jobs(keyword, location, args.results, distance)
+        linkedin_request_count += 1
+        for result in results:
+            result['searchQueryId'] = query.get('id')
 
         if not args.no_send:
             searcher.send_to_backend(results, args.backend)
