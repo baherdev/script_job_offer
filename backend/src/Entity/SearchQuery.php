@@ -41,10 +41,18 @@ class SearchQuery
     #[ORM\JoinTable(name: 'search_query_interested_user')]
     private Collection $interestedUsers;
 
+    /**
+     * @var Collection<int, JobOffer>
+     */
+    #[ORM\ManyToMany(targetEntity: JobOffer::class, inversedBy: 'searchQueries')]
+    #[ORM\JoinTable(name: 'search_query_job_offer')]
+    private Collection $jobOffers;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->interestedUsers = new ArrayCollection();
+        $this->jobOffers = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -146,6 +154,33 @@ class SearchQuery
     {
         if ($this->interestedUsers->removeElement($user)) {
             $user->removeInterestedSearchQuery($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, JobOffer>
+     */
+    public function getJobOffers(): Collection
+    {
+        return $this->jobOffers;
+    }
+
+    public function addJobOffer(JobOffer $jobOffer): static
+    {
+        if (!$this->jobOffers->contains($jobOffer)) {
+            $this->jobOffers->add($jobOffer);
+            $jobOffer->addSearchQuery($this);
+        }
+
+        return $this;
+    }
+
+    public function removeJobOffer(JobOffer $jobOffer): static
+    {
+        if ($this->jobOffers->removeElement($jobOffer)) {
+            $jobOffer->removeSearchQuery($this);
         }
 
         return $this;

@@ -48,6 +48,7 @@ class SearchQueryCrudController extends AbstractCrudController
         yield BooleanField::new('isActive', 'Actif');
         yield AssociationField::new('createdBy', 'Créé par')->hideOnForm();
         yield AssociationField::new('interestedUsers', 'Intéressés');
+        yield AssociationField::new('jobOffers', 'Offres')->hideOnIndex();
         yield DateTimeField::new('createdAt', 'Créé le')->hideOnForm();
     }
 }
