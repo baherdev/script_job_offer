@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Recherche d'emploi sur LinkedIn (page publique, sans compte)
-Utilise requests + BeautifulSoup
+Recherche d'emploi sur LinkedIn (page publique, sans compte).
+Charge d'abord les recherches actives depuis /api/search-queries/active,
+puis ouvre la page LinkedIn de chacune.
 """
 
 import requests
@@ -94,6 +95,33 @@ class LinkedInJobSearcher:
 
         return results
 
+    def fetch_active_queries(self, queries_url: str) -> List[Dict]:
+        print(f"📥 Recherches actives: {queries_url}")
+
+        try:
+            response = requests.get(queries_url, timeout=15)
+        except requests.RequestException as e:
+            print(f"❌ Impossible de joindre l'API des recherches: {e}")
+            return []
+
+        print(f"✓ Statut HTTP: {response.status_code}")
+        if response.status_code != 200:
+            print(f"❌ Erreur HTTP {response.status_code}: {response.text}")
+            return []
+
+        try:
+            queries = response.json()
+        except ValueError as e:
+            print(f"❌ Réponse JSON invalide: {e}")
+            return []
+
+        if not isinstance(queries, list):
+            print("❌ La réponse attendue est une liste de recherches.")
+            return []
+
+        print(f"✓ {len(queries)} recherche(s) active(s)\n")
+        return queries
+
     def send_to_backend(self, results: List[Dict], backend_url: str):
         if not results:
             print("ℹ️  Aucune offre à envoyer.")
@@ -117,23 +145,45 @@ class LinkedInJobSearcher:
         print(f"✓ Résultats exportés dans {filename}")
 
 
+def queries_url_from_backend(backend_url: str) -> str:
+    parsed = urllib.parse.urlparse(backend_url)
+    return f"{parsed.scheme}://{parsed.netloc}/api/search-queries/active"
+
+
 def main():
     parser = argparse.ArgumentParser(description='Scraper LinkedIn Jobs')
-    parser.add_argument('keyword', nargs='?', default='drupal', help='Mot-clé de recherche')
-    parser.add_argument('--location', default='Switzerland', help='Localisation')
-    parser.add_argument('--results', type=int, default=5, help='Nombre de résultats')
-    parser.add_argument('--distance', type=int, default=None, help='Rayon en miles')
+    parser.add_argument('--results', type=int, default=5, help='Nombre de résultats par recherche')
     parser.add_argument('--backend', default='http://nginx/api/job-offers', help='URL du backend Symfony')
+    parser.add_argument('--queries', default=None, help='URL des recherches actives (défaut: dérivée de --backend)')
     parser.add_argument('--no-send', action='store_true', help='Ne pas envoyer au backend')
     args = parser.parse_args()
 
     searcher = LinkedInJobSearcher()
-    results = searcher.search_jobs(args.keyword, args.location, args.results, args.distance)
+    queries_url = args.queries or queries_url_from_backend(args.backend)
+    queries = searcher.fetch_active_queries(queries_url)
 
-    if not args.no_send:
-        searcher.send_to_backend(results, args.backend)
-    else:
-        print("ℹ️  Mode --no-send : résultats non envoyés au backend.")
+    if not queries:
+        print("ℹ️  Aucune recherche active.")
+        return
+
+    for query in queries:
+        if not isinstance(query, dict):
+            print(f"⚠️  Recherche ignorée : format inattendu ({query!r})")
+            continue
+
+        keyword = str(query.get('keyword') or '').strip()
+        if not keyword:
+            print(f"⚠️  Recherche {query.get('id')} ignorée : mot-clé manquant.")
+            continue
+
+        location = str(query.get('location') or 'Switzerland')
+        distance = query.get('distance')
+        results = searcher.search_jobs(keyword, location, args.results, distance)
+
+        if not args.no_send:
+            searcher.send_to_backend(results, args.backend)
+        else:
+            print("ℹ️  Mode --no-send : résultats non envoyés au backend.")
 
 
 if __name__ == "__main__":

@@ -99,8 +99,9 @@ L'application repose sur trois piliers :
 ┌──────────────────────────────────────────────────┐
 │  Container scraper (Python + cron)               │
 │                                                  │
-│  scrape_from_db.py  ← lit SearchQuery en MySQL   │
-│       │  lance linkedin_job_search.py par query  │
+│  scrape_from_db.py  ← lance linkedin_job_search │
+│       │  GET /api/search-queries/active          │
+│       │  page LinkedIn par recherche, puis       │
 │       │  POST /api/job-offers                    │
 └───────┼──────────────────────────────────────────┘
         │
@@ -277,7 +278,7 @@ class JobOfferMessageHandler
 
 ### `AppScrapeActiveQueriesCommand` — `src/Command/AppScrapeActiveQueriesCommand.php`
 
-Commande de debug : affiche quelles recherches actives seraient lancées et génère les commandes Python correspondantes. Utile pour vérifier que les `SearchQuery` sont bien lues depuis la base sans avoir à attendre le cron.
+Lance `linkedin_job_search.py` une fois. Le script lit les recherches actives sur `GET /api/search-queries/active`, puis ouvre la page LinkedIn de chacune.
 
 ```bash
 docker compose exec php bin/console app:scrape-active-queries
@@ -286,8 +287,7 @@ docker compose exec php bin/console app:scrape-active-queries
 Exemple de sortie :
 
 ```
-[INFO] 1 recherche(s) active(s) trouvée(s).
-Lancement : python /app/linkedin_job_search.py 'drupal' --location 'Switzerland' --backend http://nginx/api/job-offers
+Lancement : python /app/linkedin_job_search.py --backend http://nginx/api/job-offers
 [OK] Scraping terminé.
 ```
 
@@ -327,49 +327,40 @@ VALUES ('admin@example.com', '["ROLE_USER"]', '$2y$13$...');
 
 ### `scripts/linkedin_job_search.py` — Scraper de base
 
-Scrape LinkedIn pour un mot-clé donné et envoie les résultats au backend. Utilisable manuellement ou appelé par `scrape_from_db.py`.
+Charge les recherches actives avec `GET /api/search-queries/active`, ouvre la page LinkedIn de chacune (`keyword`, `location`, `distance`) et envoie les offres au backend. Utilisable manuellement ou appelé par `scrape_from_db.py`.
+
+Depuis le container `scraper`, nginx est le service `nginx` sur le port 80. `localhost:8080` est le port publié sur la machine hôte : dans le container, rien n'écoute dessus, d'où `Connection refused`.
 
 ```bash
-cd scripts/
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+# Dans le container scraper (URL par défaut : http://nginx/api/job-offers)
+docker compose exec scraper python3 /app/linkedin_job_search.py --results 5
 
-# Recherche + envoi automatique au backend
-python linkedin_job_search.py drupal --location "Switzerland" --results 5
+# Scraping seul, sans envoi au backend
+docker compose exec scraper python3 /app/linkedin_job_search.py --results 5 --no-send
 
-# Scraping seul, sans envoi au backend (mode debug)
-python linkedin_job_search.py drupal --no-send
+# Depuis la machine hôte, une fois le venv des scripts activé
+python linkedin_job_search.py --backend http://localhost:8080/api/job-offers --results 5
 ```
 
-| Argument     | Défaut                                 | Description                         |
-|--------------|----------------------------------------|-------------------------------------|
-| `keyword`    | —                                      | Mot-clé de recherche (obligatoire)  |
-| `--location` | `Switzerland`                          | Lieu de recherche                   |
-| `--results`  | `5`                                    | Nombre d'offres à récupérer         |
-| `--distance` | —                                      | Rayon en miles (10 / 25 / 50 / 100) |
-| `--backend`  | `http://localhost:8080/api/job-offers` | URL du contrôleur Symfony           |
-| `--no-send`  | —                                      | Scraping seul, sans envoi backend   |
+| Argument     | Défaut                                      | Description                                      |
+|--------------|---------------------------------------------|--------------------------------------------------|
+| `--results`  | `5`                                         | Nombre d'offres à récupérer par recherche        |
+| `--backend`  | `http://nginx/api/job-offers`               | URL du contrôleur Symfony                        |
+| `--queries`  | dérivée de `--backend`                      | URL `GET /api/search-queries/active`             |
+| `--no-send`  | —                                           | Scraping seul, sans envoi backend                |
 
 ### `scripts/scrape_from_db.py` — Orchestrateur du cron
 
-Script appelé par le cron 3x/jour. Se connecte directement à MySQL, récupère toutes les `SearchQuery` où `isActive = true`, et lance `linkedin_job_search.py` pour chacune avec ses paramètres.
+Script appelé par le cron 3x/jour. Lance `linkedin_job_search.py` une fois. C'est ce script qui appelle `GET /api/search-queries/active` et ouvre LinkedIn pour chaque recherche.
 
 ```python
-# Flux simplifié
-queries = SELECT * FROM search_query WHERE is_active = 1
-for query in queries:
-    subprocess.run(['python3', 'linkedin_job_search.py', query.keyword, ...])
+subprocess.run(['python3', 'linkedin_job_search.py', '--backend', BACKEND_URL])
 ```
 
 Variables d'environnement supportées (avec valeurs par défaut Docker) :
 
 | Variable      | Défaut                          |
 |---------------|---------------------------------|
-| `DB_HOST`     | `mysql`                         |
-| `DB_USER`     | `root`                          |
-| `DB_PASS`     | `root`                          |
-| `DB_NAME`     | `job_scraper`                   |
 | `BACKEND_URL` | `http://nginx/api/job-offers`   |
 
 Pour tester manuellement :
@@ -450,8 +441,8 @@ script_job_offer/
 │       ├── Dockerfile                              # Python + cron + pymysql
 │       └── crontab                                 # 3x/jour : 8h, 13h, 18h
 ├── scripts/
-│   ├── linkedin_job_search.py                      # Scraper LinkedIn (argparse)
-│   ├── scrape_from_db.py                           # Orchestrateur cron → MySQL → scraper
+│   ├── linkedin_job_search.py                      # Recherches actives, puis pages LinkedIn
+│   ├── scrape_from_db.py                           # Orchestrateur cron → scraper
 │   └── requirements.txt
 ├── docker-compose.yml
 └── .gitignore
