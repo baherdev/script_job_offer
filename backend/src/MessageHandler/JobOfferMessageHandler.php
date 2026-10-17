@@ -26,27 +26,28 @@ class JobOfferMessageHandler
         $offer = is_string($url) && $url !== ''
             ? $this->jobOfferRepository->findOneBy(['url' => $url])
             : null;
-        $created = !$offer instanceof JobOffer;
 
-        if ($created) {
-            $offer = new JobOffer();
-            $offer->setTitle($message->getTitle());
-            $offer->setCompany($message->getCompany());
-            $offer->setLocation($message->getLocation());
-            $offer->setDescription($message->getDescription());
-            $offer->setUrl($message->getUrl());
-            $offer->setStatus('processed');
-            $offer->setCreatedAt(new \DateTimeImmutable());
+        if ($offer instanceof JobOffer) {
             $offer->setProcessedAt(new \DateTimeImmutable());
-            $this->em->persist($offer);
+            $this->em->flush();
+
+            return;
         }
+
+        $offer = new JobOffer();
+        $offer->setTitle($message->getTitle());
+        $offer->setCompany($message->getCompany());
+        $offer->setLocation($message->getLocation());
+        $offer->setDescription($message->getDescription());
+        $offer->setUrl($message->getUrl());
+        $offer->setStatus('processed');
+        $offer->setCreatedAt(new \DateTimeImmutable());
+        $offer->setProcessedAt(new \DateTimeImmutable());
+        $this->em->persist($offer);
 
         $searchQuery = $this->attachSearchQuery($offer, $message);
         $this->em->flush();
-
-        if ($created) {
-            $this->queueJobApplication($offer, $searchQuery);
-        }
+        $this->queueJobApplication($offer, $searchQuery);
     }
 
     private function attachSearchQuery(JobOffer $offer, JobOfferMessage $message): ?SearchQuery
