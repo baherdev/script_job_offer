@@ -38,6 +38,15 @@ class JobOffer
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $processedAt = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?float $matchScore = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $matchedKeywords = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $missingKeywords = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -135,6 +144,42 @@ class JobOffer
     public function setProcessedAt(?\DateTimeImmutable $processedAt): static
     {
         $this->processedAt = $processedAt;
+
+        return $this;
+    }
+
+    public function getMatchScore(): ?float
+    {
+        return $this->matchScore;
+    }
+
+    public function setMatchScore(?float $matchScore): static
+    {
+        $this->matchScore = $matchScore;
+
+        return $this;
+    }
+
+    public function getMatchedKeywords(): ?array
+    {
+        return $this->matchedKeywords;
+    }
+
+    public function setMatchedKeywords(?array $matchedKeywords): static
+    {
+        $this->matchedKeywords = $matchedKeywords;
+
+        return $this;
+    }
+
+    public function getMissingKeywords(): ?array
+    {
+        return $this->missingKeywords;
+    }
+
+    public function setMissingKeywords(?array $missingKeywords): static
+    {
+        $this->missingKeywords = $missingKeywords;
 
         return $this;
     }

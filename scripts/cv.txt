@@ -1,0 +1,110 @@
+BAHER RAÏS
+Développeur Full Stack — Drupal / Symfony / React
+Chemin de Plamont 5, 1350 Orbe, Suisse
++41 (0)76 595 6781 · baher.rais@gmail.com
+
+Chaîne développement web : youtube.com/freelancemodule
+
+Profil Drupal : drupal.org/u/baher
+
+EXPÉRIENCE PROFESSIONNELLE
+
+Développeur Full Stack — UNEP/GRID — 01/04/2023 – 09/2025
+Vernier, Suisse
+Développement web basé sur Drupal :
+- www.geogli.com
+- www.congolandscapes.org
+- medprogramme.unepgrid.ch
+- giri.unepgrid.ch
+- Installation et déploiement des plateformes
+Technologies
+- Back-end : Form API, Entity API, Search API, Webform
+- Front-end : Twig, Tailwind CSS, React
+- Déploiement : Git, Drone.io
+
+Responsable support et maintenance — DETAILS SA — 06/2018 – 09/2022
+Plan-les-Ouates, Suisse
+Maintenance et support pour différents clients (HUG, Salt, GIMS, Vacheron Constantin, etc.) :
+- Mises à jour de sécurité
+- Déploiement des releases
+- Suivi de projets
+Technique
+- Développement Drupal front-end : création de thèmes, intégration Twig CSS/SCSS, JS/jQuery
+- Développement Drupal back-end : modules personnalisés, migrations D7/D9, hooks, services, entités, contrôleurs, routes, plugins, Form API, Search API et Field API
+- Administration Drupal : Views (BEF, filtres contextuels), Block API, Menu API, Solr et SEO
+- Administration web : LAMP, Varnish, Apache, Nginx
+- DevOps : Lando, DDEV, Docker, Git/GitLab, workflows CI/CD, tests de performance avec JMeter et Locust
+Gestion de projet
+- Gestion agile : daily meeting Scrum, sprint planning, sprint review
+- Support avant-vente : analyse des cahiers des charges et planification de projets
+- Documentation projet, chiffrage et estimation
+- Organisation des processus de maintenance (TMA) et gestion des tickets
+
+Développeur Full Stack — GRAFMIVILLE SARL — 05/2017 – 07/2017
+Carouge, Suisse
+- dcaf.ch — Développement Drupal
+- eduki.ch — Développement Drupal
+
+Développeur Full Stack — LINALIS SARL — 08/2016 – 01/2017
+Meyrin, Suisse
+Consultant web pour le Forum économique mondial.
+
+Développeur Web — FREELANCE MODULE SARL — 05/2014 – 12/2017
+Orbe, Suisse
+- Développement de sites web basés sur Drupal et WordPress
+- Développement d'outils pour une flotte de taxis basés sur Drupal 7
+
+COMPÉTENCES
+
+Langages de programmation : C, C#, .NET, PHP, HTML5, SCSS, JS, Java, Perl, Python
+
+CMS et frameworks : Drupal, WordPress, Joomla, CakePHP, Symfony
+
+Virtualisation : Vagrant, Docker
+
+Processus de gestion : Méthode Scrum, ITIL V4, PRINCE2
+
+Outils de gestion : Jira, Harvest, Trello, Mantis, Microsoft Project
+
+Gestion de projet
+- Suivi des demandes clients avec des outils comme GitLab, Jira ou Mantis
+- Analyse des besoins clients, rédaction de cahiers des charges et estimation des tâches
+- Méthodologie agile : travail avec la méthode Scrum
+- Déploiement d'applications web sur les environnements Qualité / Staging / Production
+- Suivi de projet et de budget avec Microsoft Project et Harvest
+
+Compétences managériales
+- Conduite de réunions clients pour le suivi du plan d'action
+- Établissement de l'ordre du jour et comptes rendus de débriefing
+- Négociation de l'urgence, de l'impact et de la nature des demandes ; rédaction de rapports d'incidents
+- Réunions d'équipe pour le suivi de l'avancement des tâches
+- Préparation des sessions POC
+- Rédaction des exigences clients
+- Définition et exploitation des KPI applicatifs et du catalogue d'erreurs
+
+ÉTUDES, FORMATION ET CERTIFICATIONS
+
+Professional Scrum Master I & Product Owner I — Scrum.org — Novembre 2022
+
+PRINCE2 Foundation — AXELOS — Novembre 2022
+
+ITIL Foundation V4 — AXELOS — Octobre 2021
+
+Master en développement rapide d'applications — Haute École d'Ingénierie et de Gestion du Canton de Vaud (HEIG-VD) — 2010 – 2012
+
+Ingénieur HES — systèmes embarqués — Haute École Arc, St-Imier — 2004 – 2008
+
+COMPÉTENCES LINGUISTIQUES
+
+Langue(s) maternelle(s) : Français, Arabe
+
+Langue — Compr. orale — Compr. écrite — Expr. orale continue — Interaction orale
+Anglais — C2 — C2 — C1 — C1
+
+Allemand : A2 Italien : A2
+
+CENTRES D'INTÉRÊT
+
+Sports : Randonnée, course à pied
+
+Intérêts : Apprentissage des langues, nouvelles technologies, production de tutoriels YouTube (youtube.com/freelancemodule)
