@@ -34,7 +34,12 @@ class JobOfferCrudController extends AbstractCrudController
     public function configureActions(Actions $actions): Actions
     {
         return $actions
-            ->disable(Action::NEW, Action::EDIT);
+            ->disable(Action::NEW, Action::EDIT)
+            ->add(Crud::PAGE_INDEX, Action::DETAIL)
+            ->update(Crud::PAGE_INDEX, Action::DETAIL, static function (Action $action): Action {
+                return $action->setLabel('View')->asTextLink();
+            })
+            ->reorder(Crud::PAGE_INDEX, [Action::DETAIL, Action::DELETE]);
     }
     
     public function configureFields(string $pageName): iterable
