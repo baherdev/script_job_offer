@@ -22,6 +22,14 @@ class JobApplicationMessageHandler
             return;
         }
 
+        $existing = $this->em->getRepository(JobApplication::class)->findOneBy([
+            'user' => $user,
+            'jobOffer' => $jobOffer,
+        ]);
+        if ($existing instanceof JobApplication) {
+            return;
+        }
+
         $application = new JobApplication();
         $application->setJobOffer($jobOffer);
         $application->setUser($user);

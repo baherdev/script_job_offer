@@ -6,6 +6,7 @@ use App\Entity\JobApplication;
 use App\Entity\JobOffer;
 use App\Entity\SearchQuery;
 use App\Entity\User;
+use App\Message\JobApplicationMessage;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -71,6 +72,18 @@ final class CreateJobOfferCreatesJobApplicationTest extends WebTestCase
         self::assertCount(1, $applications);
         self::assertSame($user->getId(), $applications[0]->getUser()?->getId());
         self::assertSame(0, $applications[0]->getApplicationStatus());
+
+        $bus = static::getContainer()->get(MessageBusInterface::class);
+        self::assertInstanceOf(MessageBusInterface::class, $bus);
+        $bus->dispatch(new JobApplicationMessage(
+            jobOfferId: $offer->getId(),
+            userId: $user->getId(),
+        ));
+        $this->consumeQueues();
+
+        $entityManager->clear();
+        $applications = $entityManager->getRepository(JobApplication::class)->findBy(['jobOffer' => $offer->getId()]);
+        self::assertCount(1, $applications);
     }
 
     private function entityManager(): EntityManagerInterface
