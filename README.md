@@ -1,6 +1,6 @@
 # 🔍 Job Scraper — Backend Symfony 7.4
 
-Application complète de scraping d'offres d'emploi avec authentification utilisateur, file de messages asynchrone RabbitMQ, persistance MySQL et interface d'administration EasyAdmin v5.
+Application complète de scraping d'offres d'emploi avec authentification utilisateur, file de messages asynchrone RabbitMQ, persistance MySQL, interface d'administration EasyAdmin v5 et **scoring automatique CV↔offre par pipeline TF-IDF**.
 
 ---
 
@@ -15,6 +15,8 @@ Application complète de scraping d'offres d'emploi avec authentification utilis
 | Nginx         | alpine           |
 | EasyAdmin     | 5.x              |
 | Adminer       | latest           |
+| Python        | 3.x (scraper)    |
+| scikit-learn  | ≥ 1.3 (TF-IDF)   |
 
 ---
 
@@ -32,7 +34,15 @@ git clone git@github.com:baherdev/script_job_offer.git
 cd script_job_offer
 ```
 
-### 2. Lancer les containers
+### 2. Préparer le CV (fichier personnel)
+
+Le scoring RAG nécessite un fichier `cv.txt` dans `scripts/`. Ce fichier est personnel et n'est **pas versionné** (`.gitignore`).
+
+```bash
+cp /chemin/vers/votre/cv.txt scripts/cv.txt
+```
+
+### 3. Lancer les containers
 
 ```bash
 docker compose up -d --build
@@ -40,14 +50,14 @@ docker compose up -d --build
 
 > ⏳ MySQL prend ~1 min à démarrer sur WSL. Attends que tous les services soient `healthy`.
 
-### 3. Créer la base et lancer les migrations
+### 4. Créer la base et lancer les migrations
 
 ```bash
 docker compose exec php bin/console doctrine:database:create
 docker compose exec php bin/console doctrine:migrations:migrate
 ```
 
-### 4. Créer le premier utilisateur admin
+### 5. Créer le premier utilisateur admin
 
 ```bash
 docker compose exec php bin/console security:hash-password
@@ -57,7 +67,7 @@ docker compose exec mysql mysql -uroot -proot job_scraper -e \
   "INSERT INTO user (email, roles, password) VALUES ('admin@example.com', '[\"ROLE_USER\"]', 'HASH_ICI');"
 ```
 
-### 5. Ajouter une recherche planifiée
+### 6. Ajouter une recherche planifiée
 
 Va dans EasyAdmin → **Search Queries** → **Add** :
 - Keyword : `drupal`
@@ -70,7 +80,7 @@ Le cron s'en chargera automatiquement. Pour tester immédiatement :
 docker compose exec scraper python3 /app/scrape_from_db.py
 ```
 
-### 6. Accéder à l'application
+### 7. Accéder à l'application
 
 | Interface       | URL                               | Credentials   |
 |-----------------|-----------------------------------|---------------|
@@ -83,11 +93,12 @@ docker compose exec scraper python3 /app/scrape_from_db.py
 
 ## Comment ça fonctionne — Vue d'ensemble
 
-L'application repose sur trois piliers :
+L'application repose sur quatre piliers :
 
 1. **Scraping** : Un script Python scrape LinkedIn et envoie les offres vers le backend via une API REST.
 2. **Traitement asynchrone** : Symfony ne traite pas les offres immédiatement — il les place dans une file RabbitMQ et répond instantanément. Un worker tourne en arrière-plan et consomme la file à son rythme.
 3. **Persistance & administration** : Les offres validées sont enregistrées en MySQL et consultables via l'interface EasyAdmin.
+4. **Scoring RAG** : 5 minutes après chaque scraping, un pipeline TF-IDF compare chaque nouvelle offre au CV et calcule un score de pertinence (0–100 %).
 
 ---
 
@@ -100,6 +111,11 @@ L'application repose sur trois piliers :
 │  scrape_from_db.py  ← lit SearchQuery en MySQL   │
 │       │  lance linkedin_job_search.py par query  │
 │       │  POST /api/job-offers                    │
+│       │                                          │
+│  score_offers.py    ← 5 min après le scraping    │
+│       │  lit job_offer WHERE match_score IS NULL │
+│       │  pipeline TF-IDF (generer_lettre.py)     │
+│       └─ écrit match_score, matched/missing kw   │
 └───────┼──────────────────────────────────────────┘
         │
         ▼
@@ -132,6 +148,58 @@ L'application repose sur trois piliers :
 
 ---
 
+## Scoring RAG — CV ↔ Offre (TF-IDF)
+
+### Principe
+
+À chaque cycle de scraping, le script `score_offers.py` analyse les nouvelles offres (celles dont `match_score IS NULL`) et leur attribue un score de pertinence par rapport au CV.
+
+Le pipeline utilise **TF-IDF avec n-grammes** (importé depuis `generer_lettre.py`) :
+
+1. **Extraction des mots-clés** de l'offre (`title + company + location + description`) via TF-IDF
+2. **Construction d'un index** des segments du CV
+3. **Association** : chaque mot-clé de l'offre est comparé aux segments CV (seuil cosinus 0.22)
+4. **Score final** : `100 × mots-clés couverts / total mots-clés`
+
+Les résultats sont écrits en base sur trois champs :
+
+| Champ               | Type    | Valeur typique                        |
+|---------------------|---------|---------------------------------------|
+| `match_score`       | float   | `42.5` (%)                            |
+| `matched_keywords`  | JSON    | `["symfony", "drupal", "api rest"]`   |
+| `missing_keywords`  | JSON    | `["solr", "graphql", "kubernetes"]`   |
+
+### Fichiers requis dans `scripts/`
+
+| Fichier              | Statut    | Description                              |
+|----------------------|-----------|------------------------------------------|
+| `generer_lettre.py`  | versionné | Pipeline TF-IDF (module RAG)             |
+| `cv.txt`             | **.gitignore** | Votre CV en texte brut             |
+| `score_offers.py`    | versionné | Script principal de scoring              |
+
+> ⚠️ `cv.txt` contient des données personnelles — ne jamais le committer.
+
+### Lancement manuel
+
+```bash
+# Dry-run : affiche les scores sans écrire en base
+docker compose exec scraper python3 /app/score_offers.py --dry-run
+
+# Scoring réel (toutes les offres non scorées)
+docker compose exec scraper python3 /app/score_offers.py
+
+# Avec un CV alternatif
+docker compose exec scraper python3 /app/score_offers.py --cv /app/cv_freelance.txt
+```
+
+### Interface EasyAdmin
+
+Dans EasyAdmin → **Job Offers** :
+- Colonne **Score %** visible sur la liste, triable (tri par défaut : meilleur score en premier)
+- Dans la **fiche détail** : liste des mots-clés couverts (✓) et manquants (✗)
+
+---
+
 ## Pourquoi RabbitMQ ? Le traitement asynchrone
 
 Sans file de messages, l'API devrait scraper LinkedIn **et** enregistrer en base **dans la même requête HTTP**. Si LinkedIn est lent, si la base est surchargée, ou si 500 offres arrivent d'un coup, l'utilisateur attend — ou la requête timeout.
@@ -155,17 +223,20 @@ Ce pattern s'appelle **Producer / Consumer** :
 
 Représente une offre d'emploi scrappée et persistée.
 
-| Champ         | Type                  | Description                              |
-|---------------|-----------------------|------------------------------------------|
-| `id`          | int (auto)            | Identifiant unique                       |
-| `title`       | string(255)           | Intitulé du poste                        |
-| `company`     | string(255)           | Nom de l'entreprise                      |
-| `location`    | string(255), nullable | Lieu du poste                            |
-| `description` | text, nullable        | Description complète                     |
-| `url`         | string(500), nullable | Lien vers l'offre originale              |
-| `status`      | string(50)            | État : `pending`, `processed`, `ignored` |
-| `createdAt`   | DateTimeImmutable     | Date de création (set par le handler)    |
-| `processedAt` | DateTimeImmutable     | Date de traitement par le worker         |
+| Champ               | Type                  | Description                              |
+|---------------------|-----------------------|------------------------------------------|
+| `id`                | int (auto)            | Identifiant unique                       |
+| `title`             | string(255)           | Intitulé du poste                        |
+| `company`           | string(255)           | Nom de l'entreprise                      |
+| `location`          | string(255), nullable | Lieu du poste                            |
+| `description`       | text, nullable        | Description complète                     |
+| `url`               | string(500), nullable | Lien vers l'offre originale              |
+| `status`            | string(50)            | État : `pending`, `processed`, `ignored` |
+| `createdAt`         | DateTimeImmutable     | Date de création (set par le handler)    |
+| `processedAt`       | DateTimeImmutable     | Date de traitement par le worker         |
+| `matchScore`        | float, nullable       | Score TF-IDF CV↔offre (0–100 %)         |
+| `matchedKeywords`   | json, nullable        | Mots-clés de l'offre couverts par le CV  |
+| `missingKeywords`   | json, nullable        | Mots-clés de l'offre absents du CV       |
 
 ### `User` — `src/Entity/User.php`
 
@@ -224,7 +295,7 @@ Tableau de bord EasyAdmin v5. Accessible uniquement aux utilisateurs connectés 
 
 ### `JobOfferCrudController` — `src/Controller/Admin/JobOfferCrudController.php`
 
-CRUD EasyAdmin pour les offres d'emploi : liste, détail, édition, suppression.
+CRUD EasyAdmin pour les offres d'emploi : liste, détail, édition, suppression. Affiche la colonne **Score %** triable et les mots-clés couverts/manquants dans la fiche détail.
 
 ### `SearchQueryCrudController` — `src/Controller/Admin/SearchQueryCrudController.php`
 
@@ -366,17 +437,49 @@ Pour tester manuellement :
 docker compose exec scraper python3 /app/scrape_from_db.py
 ```
 
+### `scripts/score_offers.py` — Scoring RAG CV↔offre
+
+Script appelé automatiquement 5 minutes après chaque scraping. Lit les offres sans score (`match_score IS NULL`), calcule la pertinence via le pipeline TF-IDF de `generer_lettre.py`, et écrit les résultats en base.
+
+```bash
+# Dry-run : affiche les scores sans écrire en base
+docker compose exec scraper python3 /app/score_offers.py --dry-run
+
+# Scoring réel
+docker compose exec scraper python3 /app/score_offers.py
+```
+
+Variables d'environnement supportées :
+
+| Variable   | Défaut         | Description              |
+|------------|----------------|--------------------------|
+| `DB_HOST`  | `mysql`        | Hôte MySQL               |
+| `DB_USER`  | `root`         | Utilisateur MySQL        |
+| `DB_PASS`  | `root`         | Mot de passe MySQL       |
+| `DB_NAME`  | `job_scraper`  | Base de données          |
+| `CV_PATH`  | `/app/cv.txt`  | Chemin vers le CV texte  |
+
+### `scripts/generer_lettre.py` — Module RAG (TF-IDF)
+
+Module Python contenant le pipeline de traitement linguistique : découpage du CV en segments, extraction de mots-clés par TF-IDF, indexation et calcul de similarité cosinus. Importé par `score_offers.py`.
+
+> Ce fichier est versionné car il contient uniquement la logique algorithmique, sans données personnelles.
+
 ---
 
 ## Cron automatique (container Docker)
 
-Le service `scraper` dans `docker-compose.yml` est un container Python avec `cron` intégré. Il tourne en arrière-plan et exécute `scrape_from_db.py` 3x/jour selon la planification dans `docker/scraper/crontab`.
+Le service `scraper` dans `docker-compose.yml` est un container Python avec `cron` intégré. Il tourne en arrière-plan et exécute les scripts 3x/jour selon la planification dans `docker/scraper/crontab`.
 
-**Planification par défaut :** 8h, 13h et 18h chaque jour.
+**Planification par défaut :**
 
 ```
 0 8,13,18 * * * root python3 /app/scrape_from_db.py >> /var/log/scraper.log 2>&1
+5 8,13,18 * * * root python3 /app/score_offers.py   >> /var/log/scraper.log 2>&1
 ```
+
+- **8h00 / 13h00 / 18h00** — scraping LinkedIn
+- **8h05 / 13h05 / 18h05** — scoring RAG des nouvelles offres
 
 Pour modifier la fréquence, édite `docker/scraper/crontab` et rebuilde :
 
@@ -385,7 +488,7 @@ docker compose build scraper
 docker compose up -d scraper
 ```
 
-Pour gérer les recherches planifiées : va dans EasyAdmin → **Search Queries** → crée une entrée avec `isActive = true`. Elle sera prise en compte au prochain passage du cron.
+> ⚠️ Le fichier `crontab` doit se terminer par une ligne vide, sinon cron refuse de l'installer.
 
 ---
 
@@ -400,12 +503,12 @@ script_job_offer/
 │   │   ├── Controller/
 │   │   │   ├── Admin/
 │   │   │   │   ├── DashboardController.php         # Tableau de bord EasyAdmin
-│   │   │   │   ├── JobOfferCrudController.php      # CRUD offres d'emploi
+│   │   │   │   ├── JobOfferCrudController.php      # CRUD offres + colonne Score %
 │   │   │   │   └── SearchQueryCrudController.php   # CRUD recherches planifiées
 │   │   │   ├── JobOfferController.php              # API REST POST /api/job-offers
 │   │   │   └── SecurityController.php              # Login / Logout
 │   │   ├── Entity/
-│   │   │   ├── JobOffer.php                        # Offre d'emploi
+│   │   │   ├── JobOffer.php                        # Offre d'emploi (+ matchScore, keywords)
 │   │   │   ├── User.php                            # Utilisateur (auth)
 │   │   │   └── SearchQuery.php                     # Requête de recherche (cron)
 │   │   ├── Message/
@@ -423,16 +526,20 @@ script_job_offer/
 │   │       ├── messenger.yaml                      # Config RabbitMQ transport
 │   │       └── security.yaml                       # Firewall, access_control
 │   └── migrations/
+│       └── Version20261017*.php                    # Migration : matchScore + keywords
 ├── docker/
 │   ├── php/Dockerfile                              # PHP 8.3 + intl + amqp
 │   ├── nginx/default.conf
 │   └── scraper/
-│       ├── Dockerfile                              # Python + cron + pymysql
-│       └── crontab                                 # 3x/jour : 8h, 13h, 18h
+│       ├── Dockerfile                              # Python + cron + pymysql + scikit-learn
+│       └── crontab                                 # scraping 8h/13h/18h + scoring +5min
 ├── scripts/
 │   ├── linkedin_job_search.py                      # Scraper LinkedIn (argparse)
 │   ├── scrape_from_db.py                           # Orchestrateur cron → MySQL → scraper
-│   └── requirements.txt
+│   ├── score_offers.py                             # Scoring RAG CV↔offre (TF-IDF)
+│   ├── generer_lettre.py                           # Pipeline TF-IDF (module RAG)
+│   ├── cv.txt                                      # ← PERSONNEL, non versionné (.gitignore)
+│   └── requirements.txt                            # pymysql, numpy, scikit-learn, requests
 ├── docker-compose.yml
 └── .gitignore
 ```
@@ -483,8 +590,23 @@ docker compose logs -f scraper
 # Lancer le scraping immédiatement (sans attendre le cron)
 docker compose exec scraper python3 /app/scrape_from_db.py
 
+# Lancer le scoring immédiatement (toutes les offres non scorées)
+docker compose exec scraper python3 /app/score_offers.py
+
+# Scorer sans écrire en base (dry-run)
+docker compose exec scraper python3 /app/score_offers.py --dry-run
+
+# Rescorer toutes les offres (réinitialise les scores en base, puis relance)
+docker compose exec mysql mysql -uroot -proot job_scraper \
+  -e "UPDATE job_offer SET match_score=NULL, matched_keywords=NULL, missing_keywords=NULL;"
+docker compose exec scraper python3 /app/score_offers.py
+
 # Vérifier quelles SearchQuery seraient lancées (debug PHP)
 docker compose exec php bin/console app:scrape-active-queries
+
+# Voir les offres avec leur score
+docker compose exec mysql mysql -uroot -proot job_scraper \
+  -e "SELECT id, title, company, match_score FROM job_offer ORDER BY match_score DESC LIMIT 10;"
 
 # Vider le cache Symfony
 docker compose exec php bin/console cache:clear
@@ -492,9 +614,8 @@ docker compose exec php bin/console cache:clear
 # Voir toutes les routes
 docker compose exec php bin/console debug:router
 
-# Voir les offres en base
-docker compose exec mysql mysql -uroot -proot job_scraper \
-  -e "SELECT id, title, company, status, created_at FROM job_offer ORDER BY id DESC LIMIT 10;"
+# Rebuilder le container scraper (après modif requirements.txt ou crontab)
+docker compose build scraper && docker compose up -d scraper
 ```
 
 ---
@@ -508,6 +629,16 @@ APP_ENV=dev
 APP_SECRET=changeme
 DATABASE_URL="mysql://root:root@mysql:3306/job_scraper?serverVersion=8.0&charset=utf8mb4"
 MESSENGER_TRANSPORT_DSN=amqp://guest:guest@rabbitmq:5672/%2f/job_offers
+```
+
+Variables du container scraper (dans `docker-compose.yml`) :
+
+```env
+DB_HOST=mysql
+DB_USER=root
+DB_PASS=root
+DB_NAME=job_scraper
+CV_PATH=/app/cv.txt
 ```
 
 ---
