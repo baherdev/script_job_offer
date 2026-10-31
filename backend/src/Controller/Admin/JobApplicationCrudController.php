@@ -2,10 +2,13 @@
 
 namespace App\Controller\Admin;
 
+use App\Entity\Enterprise;
 use App\Entity\JobApplication;
 use App\Entity\User;
+use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateField;
@@ -28,6 +31,25 @@ class JobApplicationCrudController extends AbstractCrudController
         }
 
         return $jobApplication;
+    }
+
+    public function persistEntity(EntityManagerInterface $entityManager, $entityInstance): void
+    {
+        if ($entityInstance instanceof JobApplication && $this->isEnterpriseBlackListed($entityInstance)) {
+            throw new UnprocessableEntityHttpException('The application was not created because this enterprise is blacklisted by the user.');
+        }
+
+        parent::persistEntity($entityManager, $entityInstance);
+    }
+
+    private function isEnterpriseBlackListed(JobApplication $application): bool
+    {
+        $enterprise = $application->getJobOffer()?->getEnterprise();
+        $user = $application->getUser();
+
+        return $enterprise instanceof Enterprise
+            && $user instanceof User
+            && $user->getBlackListedEnterprises()->contains($enterprise);
     }
 
     public function configureCrud(Crud $crud): Crud

@@ -2,6 +2,7 @@
 
 namespace App\MessageHandler;
 
+use App\Entity\Enterprise;
 use App\Entity\JobApplication;
 use App\Entity\JobOffer;
 use App\Entity\User;
@@ -26,7 +27,7 @@ class JobApplicationMessageHandler
             'user' => $user,
             'jobOffer' => $jobOffer,
         ]);
-        if ($existing instanceof JobApplication) {
+        if ($existing instanceof JobApplication || $this->isEnterpriseBlackListed($jobOffer, $user)) {
             return;
         }
 
@@ -44,5 +45,12 @@ class JobApplicationMessageHandler
 
         $this->em->persist($application);
         $this->em->flush();
+    }
+
+    private function isEnterpriseBlackListed(JobOffer $jobOffer, User $user): bool
+    {
+        $enterprise = $jobOffer->getEnterprise();
+
+        return $enterprise instanceof Enterprise && $user->getBlackListedEnterprises()->contains($enterprise);
     }
 }
