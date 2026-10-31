@@ -5,8 +5,10 @@ depuis la page LinkedIn.
 """
 
 import argparse
+import html
+import re
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from typing import Dict, Optional
 from urllib.parse import urlparse, urlunparse
 
@@ -44,7 +46,7 @@ class LinkedInJobDescriptionFetcher:
         print(f"    🔗 {offer.get('url')}\n")
         return offer
 
-    def extract_description(self, job_url: str) -> Optional[str]:
+    def extract_description(self, job_url: str, company: Optional[str] = None) -> Optional[str]:
         if not job_url:
             print("❌ L'offre n'a pas d'URL.")
             return None
@@ -61,6 +63,7 @@ class LinkedInJobDescriptionFetcher:
             return None
 
         soup = BeautifulSoup(response.text, 'html.parser')
+        self.log_company_logo(response.text, company)
         description_div = soup.select_one('div[id^="JobDetails_AboutTheJob"]')
         if description_div is None:
             description_div = soup.select_one('div.description__text .show-more-less-html__markup')
@@ -76,6 +79,66 @@ class LinkedInJobDescriptionFetcher:
         print(f"✓ Description extraite ({len(description)} caractères)\n")
         print(description)
         return description
+
+    def log_company_logo(self, page_html: str, company: Optional[str]) -> None:
+        company_name = (company or "").strip()
+        expected_alt = f"Company logo for, {company_name}."
+        document = self.whole_document(page_html)
+        soup = BeautifulSoup(document, "html.parser")
+
+        logo = soup.find("img", alt=expected_alt)
+        src = self.image_url(logo)
+        if not src:
+            src = self.logo_src_from_markup(document, expected_alt)
+        if not src and company_name:
+            src = self.company_logo_src(soup, company_name)
+
+        if not src:
+            print(f"ℹ️  Logo introuvable (alt=\"{expected_alt}\")")
+            return
+
+        print(f"🖼️  Logo: {src}")
+
+    def whole_document(self, page_html: str) -> str:
+        decoded = (
+            page_html.replace("\\u003c", "<")
+            .replace("\\u003e", ">")
+            .replace("\\u0026", "&")
+            .replace("\\u0022", '"')
+            .replace("\\/", "/")
+            .replace('\\"', '"')
+        )
+        return html.unescape(decoded)
+
+    def image_url(self, image: Optional[Tag]) -> str:
+        if image is None:
+            return ""
+        return (image.get("src") or image.get("data-delayed-url") or "").strip()
+
+    def logo_src_from_markup(self, document: str, expected_alt: str) -> str:
+        for match in re.finditer(r"<img\b[^>]*>", document, flags=re.IGNORECASE):
+            tag = match.group(0)
+            alt_match = re.search(r"\balt\s*=\s*([\"'])(.*?)\1", tag, flags=re.IGNORECASE | re.DOTALL)
+            if alt_match is None or html.unescape(alt_match.group(2)).strip() != expected_alt:
+                continue
+            src_match = re.search(
+                r"\b(?:src|data-delayed-url)\s*=\s*([\"'])(.*?)\1",
+                tag,
+                flags=re.IGNORECASE | re.DOTALL,
+            )
+            if src_match is not None:
+                return html.unescape(src_match.group(2)).strip()
+        return ""
+
+    def company_logo_src(self, soup: BeautifulSoup, company_name: str) -> str:
+        for image in soup.find_all("img"):
+            alt = (image.get("alt") or "").strip()
+            src = self.image_url(image)
+            if alt == f"Company logo for, {company_name}." and src:
+                return src
+            if alt == company_name and "company-logo" in src:
+                return src
+        return ""
 
     def update_description(self, update_url: str, offer_id: int, description: str) -> bool:
         print(f"\n📍 PUT {update_url}")
@@ -116,7 +179,7 @@ def main():
     if offer is None:
         return
 
-    description = fetcher.extract_description(offer.get('url'))
+    description = fetcher.extract_description(offer.get('url'), offer.get('company'))
     if description is None or offer.get('id') is None:
         return
 
