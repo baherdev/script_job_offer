@@ -46,7 +46,7 @@ class JobOfferMessageHandler
         $offer->setStatus('processed');
         $offer->setCreatedAt(new \DateTimeImmutable());
         $offer->setProcessedAt(new \DateTimeImmutable());
-        $offer->setEnterprise($this->findOrCreateEnterprise($message->getCompany()));
+        $offer->setEnterprise($this->findOrCreateEnterprise($message->getCompany(), $message->getLocation()));
 
         $this->em->persist($offer);
 
@@ -85,7 +85,7 @@ class JobOfferMessageHandler
         ));
     }
 
-    private function findOrCreateEnterprise(string $company): Enterprise
+    private function findOrCreateEnterprise(string $company, ?string $location): Enterprise
     {
         $label = trim($company);
         $enterprise = $this->enterpriseRepository->findOneBy(['label' => $label]);
@@ -93,12 +93,17 @@ class JobOfferMessageHandler
             return $enterprise;
         }
 
+        $city = trim((string) $location);
+        if (mb_strlen($city) > 255) {
+            $city = mb_substr($city, 0, 255);
+        }
+
         $enterprise = new Enterprise();
         $enterprise->setLabel($label);
         $enterprise->setWebsite('');
         $enterprise->setStreet('');
         $enterprise->setZipCode('');
-        $enterprise->setCity('');
+        $enterprise->setCity($city);
         $enterprise->setCountry('');
         $this->em->persist($enterprise);
 
