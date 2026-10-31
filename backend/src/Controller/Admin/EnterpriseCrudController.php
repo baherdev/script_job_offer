@@ -33,6 +33,7 @@ class EnterpriseCrudController extends AbstractCrudController
         yield TextField::new('zipCode', 'Code postal');
         yield TextField::new('city', 'Ville');
         yield TextField::new('country', 'Pays');
+        yield AssociationField::new('logo', 'Logo');
         yield AssociationField::new('contacts', 'Contacts')->hideOnForm();
     }
 }
