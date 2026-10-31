@@ -148,19 +148,16 @@ class LinkedInJobDescriptionFetcher:
 
         print(f"\n📍 PUT {update_url}")
         try:
-            response = requests.put(update_url, json=payload, timeout=30)
+            response = requests.put(update_url, json=payload, timeout=15)
         except requests.RequestException as e:
             print(f"❌ Impossible de joindre le backend: {e}")
             return False
 
-        if response.status_code != 200:
+        if response.status_code != 202:
             print(f"❌ Backend HTTP {response.status_code}: {response.text}")
             return False
 
-        print(f"✅ Description enregistrée pour l'offre [{offer_id}]")
-        stored_logo = response.json().get('logo') if response.headers.get('content-type', '').startswith('application/json') else None
-        if stored_logo:
-            print(f"✅ Logo enregistré: {stored_logo}")
+        print(f"✅ Mise à jour envoyée dans la file pour l'offre [{offer_id}]")
         return True
 
 

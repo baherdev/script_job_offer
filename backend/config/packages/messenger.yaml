@@ -20,4 +20,5 @@ framework:
 
         routing:
             App\Message\JobOfferMessage: async
+            App\Message\JobOfferUpdateMessage: async
             App\Message\JobApplicationMessage: job_applications
