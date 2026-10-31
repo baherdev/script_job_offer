@@ -33,6 +33,10 @@ class Enterprise
     #[ORM\Column(length: 255)]
     private ?string $country = null;
 
+    #[ORM\OneToOne(inversedBy: 'enterprise')]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?FileReference $logo = null;
+
     /**
      * @var Collection<int, JobOffer>
      */
@@ -124,6 +128,31 @@ class Enterprise
     public function setCountry(string $country): static
     {
         $this->country = $country;
+
+        return $this;
+    }
+
+    public function getLogo(): ?FileReference
+    {
+        return $this->logo;
+    }
+
+    public function setLogo(?FileReference $logo): static
+    {
+        if ($this->logo === $logo) {
+            return $this;
+        }
+
+        $previous = $this->logo;
+        $this->logo = $logo;
+
+        if ($previous !== null && $previous->getEnterprise() === $this) {
+            $previous->setEnterprise(null);
+        }
+
+        if ($logo !== null && $logo->getEnterprise() !== $this) {
+            $logo->setEnterprise($this);
+        }
 
         return $this;
     }

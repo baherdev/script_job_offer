@@ -23,6 +23,9 @@ class FileReference
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
     private ?\DateTimeImmutable $creationDate = null;
 
+    #[ORM\OneToOne(mappedBy: 'logo', targetEntity: Enterprise::class)]
+    private ?Enterprise $enterprise = null;
+
     public function __construct()
     {
         $this->creationDate = new \DateTimeImmutable('today');
@@ -65,6 +68,31 @@ class FileReference
     public function setCreationDate(\DateTimeImmutable $creationDate): static
     {
         $this->creationDate = $creationDate;
+
+        return $this;
+    }
+
+    public function getEnterprise(): ?Enterprise
+    {
+        return $this->enterprise;
+    }
+
+    public function setEnterprise(?Enterprise $enterprise): static
+    {
+        if ($this->enterprise === $enterprise) {
+            return $this;
+        }
+
+        $previous = $this->enterprise;
+        $this->enterprise = $enterprise;
+
+        if ($previous !== null && $previous->getLogo() === $this) {
+            $previous->setLogo(null);
+        }
+
+        if ($enterprise !== null && $enterprise->getLogo() !== $this) {
+            $enterprise->setLogo($this);
+        }
 
         return $this;
     }
