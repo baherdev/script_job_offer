@@ -108,11 +108,13 @@ class JobOfferController extends AbstractController
         }
 
         $offer->setDescription($data['description']);
+        $offer->setProcessedAt(new \DateTimeImmutable());
         $this->jobOfferRepository->getEntityManager()->flush();
 
         return $this->json([
             'id'          => $offer->getId(),
             'description' => $offer->getDescription(),
+            'processedAt' => $offer->getProcessedAt()?->format(\DateTimeInterface::ATOM),
         ]);
     }
 }
