@@ -117,6 +117,7 @@ class JobOfferController extends AbstractController
         return $this->json([
             'id'          => $offer->getId(),
             'description' => $offer->getDescription(),
+            'processedAt' => $offer->getProcessedAt()?->format(\DateTimeInterface::ATOM),
         ]);
     }
 }
