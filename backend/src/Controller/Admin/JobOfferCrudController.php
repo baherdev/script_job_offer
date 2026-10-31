@@ -28,20 +28,21 @@ class JobOfferCrudController extends AbstractCrudController
         return $crud
             ->setEntityLabelInSingular('Job Offer')
             ->setEntityLabelInPlural('Job Offers')
-            ->setDefaultSort(['createdAt' => 'DESC']);
+            ->setDefaultSort(['createdAt' => 'DESC'])
+            ->setDefaultRowAction(Action::DETAIL);
     }
 
     public function configureActions(Actions $actions): Actions
     {
         return $actions
-            ->disable(Action::NEW, Action::EDIT)
+            ->disable(Action::NEW)
             ->add(Crud::PAGE_INDEX, Action::DETAIL)
             ->update(Crud::PAGE_INDEX, Action::DETAIL, static function (Action $action): Action {
                 return $action->setLabel('View')->asTextLink();
             })
             ->reorder(Crud::PAGE_INDEX, [Action::DETAIL, Action::DELETE]);
     }
-    
+
     public function configureFields(string $pageName): iterable
     {
         yield IdField::new('id')->hideOnForm();
