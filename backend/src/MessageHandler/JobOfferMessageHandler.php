@@ -36,7 +36,9 @@ class JobOfferMessageHandler
 
         if ($offer instanceof JobOffer) {
             $offer->setProcessedAt(new \DateTimeImmutable());
+            $searchQuery = $this->attachSearchQuery($offer, $message);
             $this->em->flush();
+            $this->queueJobApplication($offer, $searchQuery);
 
             return;
         }
