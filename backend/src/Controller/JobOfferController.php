@@ -57,7 +57,7 @@ class JobOfferController extends AbstractController
             fn (JobOffer $offer): array => [
                 'id'                    => $offer->getId(),
                 'title'                 => $offer->getTitle(),
-                'company'               => $offer->getCompany(),
+                'company'               => $offer->getEnterprise()?->getLabel(),
                 'location'              => $offer->getLocation(),
                 'description'           => $offer->getDescription(),
                 'url'                   => $offer->getUrl(),
