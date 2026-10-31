@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\JobOffer;
 use App\Repository\JobOfferRepository;
+use App\Service\EnterpriseLogoService;
 use App\Service\JobOfferService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,6 +18,7 @@ class JobOfferController extends AbstractController
     public function __construct(
         private readonly JobOfferService $jobOfferService,
         private readonly JobOfferRepository $jobOfferRepository,
+        private readonly EnterpriseLogoService $enterpriseLogoService,
     ) {}
 
     #[Route('/job-offers', name: 'job_offers_create', methods: ['POST'])]
@@ -101,6 +103,10 @@ class JobOfferController extends AbstractController
         if (!is_string($data['description'])) {
             $errors[] = 'description must be a string';
         }
+        $logoUrl = $data['logo'] ?? null;
+        if ($logoUrl !== null && $logoUrl !== '' && !is_string($logoUrl)) {
+            $errors[] = 'logo must be a string';
+        }
         if ($errors !== []) {
             return $this->json(['error' => 'Validation failed', 'details' => $errors], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
@@ -108,6 +114,19 @@ class JobOfferController extends AbstractController
         $offer = $this->jobOfferRepository->find((int) $data['id']);
         if (!$offer instanceof JobOffer) {
             return $this->json(['error' => 'Job offer not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        if (is_string($logoUrl) && $logoUrl !== '') {
+            $enterprise = $offer->getEnterprise();
+            if ($enterprise === null) {
+                return $this->json(['error' => 'Job offer has no enterprise'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            try {
+                $this->enterpriseLogoService->assignFromUrl($enterprise, $logoUrl);
+            } catch (\InvalidArgumentException $exception) {
+                return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
         }
 
         $offer->setDescription($data['description']);
@@ -118,6 +137,7 @@ class JobOfferController extends AbstractController
             'id'          => $offer->getId(),
             'description' => $offer->getDescription(),
             'processedAt' => $offer->getProcessedAt()?->format(\DateTimeInterface::ATOM),
+            'logo'        => $offer->getEnterprise()?->getLogo()?->getFilePath(),
         ]);
     }
 }
