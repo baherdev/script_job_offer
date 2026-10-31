@@ -2,10 +2,12 @@
 
 namespace App\MessageHandler;
 
+use App\Entity\Enterprise;
 use App\Entity\JobOffer;
 use App\Entity\SearchQuery;
 use App\Message\JobApplicationMessage;
 use App\Message\JobOfferMessage;
+use App\Repository\EnterpriseRepository;
 use App\Repository\JobOfferRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -17,6 +19,7 @@ class JobOfferMessageHandler
     public function __construct(
         private EntityManagerInterface $em,
         private JobOfferRepository $jobOfferRepository,
+        private EnterpriseRepository $enterpriseRepository,
         private MessageBusInterface $bus,
     ) {}
 
@@ -43,6 +46,8 @@ class JobOfferMessageHandler
         $offer->setStatus('processed');
         $offer->setCreatedAt(new \DateTimeImmutable());
         $offer->setProcessedAt(new \DateTimeImmutable());
+        $offer->setEnterprise($this->findOrCreateEnterprise($message->getCompany()));
+
         $this->em->persist($offer);
 
         $searchQuery = $this->attachSearchQuery($offer, $message);
@@ -78,5 +83,25 @@ class JobOfferMessageHandler
             jobOfferId: $offer->getId(),
             userId: $user->getId(),
         ));
+    }
+
+    private function findOrCreateEnterprise(string $company): Enterprise
+    {
+        $label = trim($company);
+        $enterprise = $this->enterpriseRepository->findOneBy(['label' => $label]);
+        if ($enterprise instanceof Enterprise) {
+            return $enterprise;
+        }
+
+        $enterprise = new Enterprise();
+        $enterprise->setLabel($label);
+        $enterprise->setWebsite('');
+        $enterprise->setStreet('');
+        $enterprise->setZipCode('');
+        $enterprise->setCity('');
+        $enterprise->setCountry('');
+        $this->em->persist($enterprise);
+
+        return $enterprise;
     }
 }
