@@ -4,7 +4,6 @@ namespace App\Controller;
 
 use App\Entity\JobOffer;
 use App\Repository\JobOfferRepository;
-use App\Service\EnterpriseLogoService;
 use App\Service\JobOfferService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -18,7 +17,6 @@ class JobOfferController extends AbstractController
     public function __construct(
         private readonly JobOfferService $jobOfferService,
         private readonly JobOfferRepository $jobOfferRepository,
-        private readonly EnterpriseLogoService $enterpriseLogoService,
     ) {}
 
     #[Route('/job-offers', name: 'job_offers_create', methods: ['POST'])]
@@ -113,28 +111,19 @@ class JobOfferController extends AbstractController
             return $this->json(['error' => 'Job offer not found'], Response::HTTP_NOT_FOUND);
         }
 
-        if (is_string($logoUrl) && $logoUrl !== '') {
-            $enterprise = $offer->getEnterprise();
-            if ($enterprise === null) {
-                return $this->json(['error' => 'Job offer has no enterprise'], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            try {
-                $this->enterpriseLogoService->assignFromUrl($enterprise, $logoUrl);
-            } catch (\InvalidArgumentException $exception) {
-                return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
+        if (is_string($logoUrl) && $logoUrl !== '' && $offer->getEnterprise() === null) {
+            return $this->json(['error' => 'Job offer has no enterprise'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $offer->setDescription($data['description']);
-        $offer->setProcessedAt(new \DateTimeImmutable());
-        $this->jobOfferRepository->getEntityManager()->flush();
+        $this->jobOfferService->dispatchDescriptionUpdate(
+            (int) $data['id'],
+            $data['description'],
+            is_string($logoUrl) && $logoUrl !== '' ? $logoUrl : null,
+        );
 
         return $this->json([
-            'id'          => $offer->getId(),
-            'description' => $offer->getDescription(),
-            'processedAt' => $offer->getProcessedAt()?->format(\DateTimeInterface::ATOM),
-            'logo'        => $offer->getEnterprise()?->getLogo()?->getFilePath(),
-        ]);
+            'message' => 'Job offer update dispatched to the queue.',
+            'id'      => (int) $data['id'],
+        ], Response::HTTP_ACCEPTED);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Message\JobOfferMessage;
+use App\Message\JobOfferUpdateMessage;
 use Symfony\Component\Messenger\MessageBusInterface;
 
 class JobOfferService
@@ -25,5 +26,10 @@ class JobOfferService
             $count++;
         }
         return $count;
+    }
+
+    public function dispatchDescriptionUpdate(int $id, string $description, ?string $logoUrl): void
+    {
+        $this->bus->dispatch(new JobOfferUpdateMessage($id, $description, $logoUrl));
     }
 }
