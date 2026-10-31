@@ -46,41 +46,41 @@ class LinkedInJobDescriptionFetcher:
         print(f"    🔗 {offer.get('url')}\n")
         return offer
 
-    def extract_description(self, job_url: str, company: Optional[str] = None) -> Optional[str]:
+    def extract_description(self, job_url: str, company: Optional[str] = None) -> tuple[Optional[str], Optional[str]]:
         if not job_url:
             print("❌ L'offre n'a pas d'URL.")
-            return None
+            return None, None
 
         try:
             response = requests.get(job_url, headers=self.headers, timeout=15)
         except requests.RequestException as e:
             print(f"❌ Erreur réseau: {e}")
-            return None
+            return None, None
 
         print(f"✓ Page LinkedIn HTTP: {response.status_code}")
         if response.status_code != 200:
             print(f"❌ Erreur HTTP {response.status_code}")
-            return None
+            return None, None
 
         soup = BeautifulSoup(response.text, 'html.parser')
-        self.log_company_logo(response.text, company)
+        logo_url = self.log_company_logo(response.text, company)
         description_div = soup.select_one('div[id^="JobDetails_AboutTheJob"]')
         if description_div is None:
             description_div = soup.select_one('div.description__text .show-more-less-html__markup')
         if description_div is None:
             print("❌ Description introuvable sur la page LinkedIn.")
-            return None
+            return None, logo_url
 
         description = description_div.get_text("\n", strip=True)
         if not description:
             print("❌ La description LinkedIn est vide.")
-            return None
+            return None, logo_url
 
         print(f"✓ Description extraite ({len(description)} caractères)\n")
         print(description)
-        return description
+        return description, logo_url
 
-    def log_company_logo(self, page_html: str, company: Optional[str]) -> None:
+    def log_company_logo(self, page_html: str, company: Optional[str]) -> Optional[str]:
         company_name = (company or "").strip()
         expected_alt = f"Company logo for, {company_name}."
         document = self.whole_document(page_html)
@@ -95,9 +95,10 @@ class LinkedInJobDescriptionFetcher:
 
         if not src:
             print(f"ℹ️  Logo introuvable (alt=\"{expected_alt}\")")
-            return
+            return None
 
         print(f"🖼️  Logo: {src}")
+        return src
 
     def whole_document(self, page_html: str) -> str:
         decoded = (
@@ -140,14 +141,14 @@ class LinkedInJobDescriptionFetcher:
                 return src
         return ""
 
-    def update_description(self, update_url: str, offer_id: int, description: str) -> bool:
+    def update_description(self, update_url: str, offer_id: int, description: str, logo_url: Optional[str] = None) -> bool:
+        payload = {'id': offer_id, 'description': description}
+        if logo_url:
+            payload['logo'] = logo_url
+
         print(f"\n📍 PUT {update_url}")
         try:
-            response = requests.put(
-                update_url,
-                json={'id': offer_id, 'description': description},
-                timeout=15,
-            )
+            response = requests.put(update_url, json=payload, timeout=30)
         except requests.RequestException as e:
             print(f"❌ Impossible de joindre le backend: {e}")
             return False
@@ -157,6 +158,9 @@ class LinkedInJobDescriptionFetcher:
             return False
 
         print(f"✅ Description enregistrée pour l'offre [{offer_id}]")
+        stored_logo = response.json().get('logo') if response.headers.get('content-type', '').startswith('application/json') else None
+        if stored_logo:
+            print(f"✅ Logo enregistré: {stored_logo}")
         return True
 
 
@@ -179,11 +183,11 @@ def main():
     if offer is None:
         return
 
-    description = fetcher.extract_description(offer.get('url'), offer.get('company'))
+    description, logo_url = fetcher.extract_description(offer.get('url'), offer.get('company'))
     if description is None or offer.get('id') is None:
         return
 
-    fetcher.update_description(job_offers_update_url(args.backend), offer['id'], description)
+    fetcher.update_description(job_offers_update_url(args.backend), offer['id'], description, logo_url)
 
 
 if __name__ == "__main__":
