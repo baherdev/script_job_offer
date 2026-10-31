@@ -24,6 +24,8 @@ class DashboardController extends AbstractDashboardController
     public function configureMenuItems(): iterable
     {
         yield MenuItem::linkToDashboard('Dashboard', null);
+        yield MenuItem::section('Utilisateurs');
+        yield MenuItem::linkToRoute('Users', null, 'admin_user_index');
         yield MenuItem::section('Offres');
         yield MenuItem::linkToRoute('Job Offers', null, 'admin_job_offer_index');
         yield MenuItem::linkToRoute('Job Applications', null, 'admin_job_application_index');
