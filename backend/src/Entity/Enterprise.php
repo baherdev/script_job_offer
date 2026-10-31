@@ -49,10 +49,17 @@ class Enterprise
     #[ORM\OneToMany(targetEntity: Contact::class, mappedBy: 'enterprise')]
     private Collection $contacts;
 
+    /**
+     * @var Collection<int, User>
+     */
+    #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'blackListedEnterprises')]
+    private Collection $blackListingUsers;
+
     public function __construct()
     {
         $this->jobOffers = new ArrayCollection();
         $this->contacts = new ArrayCollection();
+        $this->blackListingUsers = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -210,6 +217,33 @@ class Enterprise
             if ($contact->getEnterprise() === $this) {
                 $contact->setEnterprise(null);
             }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    public function getBlackListingUsers(): Collection
+    {
+        return $this->blackListingUsers;
+    }
+
+    public function addBlackListingUser(User $user): static
+    {
+        if (!$this->blackListingUsers->contains($user)) {
+            $this->blackListingUsers->add($user);
+            $user->addBlackListedEnterprise($this);
+        }
+
+        return $this;
+    }
+
+    public function removeBlackListingUser(User $user): static
+    {
+        if ($this->blackListingUsers->removeElement($user)) {
+            $user->removeBlackListedEnterprise($this);
         }
 
         return $this;

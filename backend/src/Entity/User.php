@@ -51,11 +51,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: JobApplication::class, mappedBy: 'user')]
     private Collection $jobApplications;
 
+    /**
+     * @var Collection<int, Enterprise>
+     */
+    #[ORM\ManyToMany(targetEntity: Enterprise::class, inversedBy: 'blackListingUsers')]
+    #[ORM\JoinTable(name: 'user_black_listed_enterprise')]
+    private Collection $blackListedEnterprises;
+
     public function __construct()
     {
         $this->searchQueries = new ArrayCollection();
         $this->interestedSearchQueries = new ArrayCollection();
         $this->jobApplications = new ArrayCollection();
+        $this->blackListedEnterprises = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -133,6 +141,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $data["\0" . self::class . "\0searchQueries"],
             $data["\0" . self::class . "\0interestedSearchQueries"],
             $data["\0" . self::class . "\0jobApplications"],
+            $data["\0" . self::class . "\0blackListedEnterprises"],
         );
 
         return $data;
@@ -229,6 +238,33 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             if ($jobApplication->getUser() === $this) {
                 $jobApplication->setUser(null);
             }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Enterprise>
+     */
+    public function getBlackListedEnterprises(): Collection
+    {
+        return $this->blackListedEnterprises;
+    }
+
+    public function addBlackListedEnterprise(Enterprise $enterprise): static
+    {
+        if (!$this->blackListedEnterprises->contains($enterprise)) {
+            $this->blackListedEnterprises->add($enterprise);
+            $enterprise->addBlackListingUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeBlackListedEnterprise(Enterprise $enterprise): static
+    {
+        if ($this->blackListedEnterprises->removeElement($enterprise)) {
+            $enterprise->removeBlackListingUser($this);
         }
 
         return $this;

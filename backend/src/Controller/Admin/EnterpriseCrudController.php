@@ -34,6 +34,7 @@ class EnterpriseCrudController extends AbstractCrudController
         yield TextField::new('city', 'Ville');
         yield TextField::new('country', 'Pays');
         yield AssociationField::new('logo', 'Logo');
+        yield AssociationField::new('blackListingUsers', 'Black Listed By')->hideOnIndex();
         yield AssociationField::new('contacts', 'Contacts')->hideOnForm();
     }
 }

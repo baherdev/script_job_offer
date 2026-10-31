@@ -55,6 +55,7 @@ class UserCrudController extends AbstractCrudController
             ->onlyOnForms()
             ->setHelp($pageName === Crud::PAGE_EDIT ? 'Laisser vide pour conserver le mot de passe actuel.' : '')
             ->setFormTypeOption('attr', ['autocomplete' => 'new-password']);
+        yield AssociationField::new('blackListedEnterprises', 'Black Listed Enterprises');
         yield AssociationField::new('searchQueries', 'Recherches')->hideOnForm();
         yield AssociationField::new('jobApplications', 'Candidatures')->hideOnForm();
     }
