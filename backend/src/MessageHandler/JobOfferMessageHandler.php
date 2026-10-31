@@ -39,7 +39,6 @@ class JobOfferMessageHandler
 
         $offer = new JobOffer();
         $offer->setTitle($message->getTitle());
-        $offer->setCompany($message->getCompany());
         $offer->setLocation($message->getLocation());
         $offer->setDescription($message->getDescription());
         $offer->setUrl($message->getUrl());
