@@ -42,11 +42,13 @@ Le scoring RAG nécessite un fichier `cv.txt` dans `scripts/`. Ce fichier est pe
 cp /chemin/vers/votre/cv.txt scripts/cv.txt
 ```
 
-### 3. Lancer les containers
+### 3. Lancer les containers et installer projet symfony
 
 ```bash
 docker compose up -d --build
+docker compose exec php composer install 
 ```
+
 
 > ⏳ MySQL prend ~1 min à démarrer sur WSL. Attends que tous les services soient `healthy`.
 
