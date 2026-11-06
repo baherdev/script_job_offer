@@ -60,15 +60,20 @@ docker compose exec php bin/console doctrine:migrations:migrate
 ```
 
 ### 5. Créer le premier utilisateur admin
-
+1. Générer le hash du mot de passe :
 ```bash
 docker compose exec php bin/console security:hash-password
 # copie le hash généré
-
-docker compose exec mysql mysql -uroot -proot job_scraper -e \
-  "INSERT INTO user (email, roles, password) VALUES ('admin@example.com', '[\"ROLE_USER\"]', 'HASH_ICI');"
 ```
-
+2. Insérer l'utilisateur (remplacer `HASH_ICI` par le hash obtenu) :
+   
+```bash
+docker compose exec -T mysql mysql -uroot -proot job_scraper <<'SQL'
+INSERT INTO user (email, roles, password)
+VALUES ('admin@example.com', '["ROLE_USER"]', 'HASH_ICI');
+SQL
+```
+Le heredoc `<<'SQL'` évite que le shell interprète les `$` du hash
 ### 6. Ajouter une recherche planifiée
 
 Va dans EasyAdmin → **Search Queries** → **Add** :
