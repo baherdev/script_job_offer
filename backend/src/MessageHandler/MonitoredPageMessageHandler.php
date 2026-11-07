@@ -21,6 +21,17 @@ class MonitoredPageMessageHandler
             throw new UnrecoverableMessageHandlingException(sprintf('User %d was not found.', $message->getUserId()));
         }
 
+        $page = $this->em->getRepository(MonitoredPage::class)->findOneBy([
+            'url' => $message->getUrl(),
+            'user' => $user,
+        ]);
+        if ($page instanceof MonitoredPage) {
+            $page->setHash($message->getHash());
+            $this->em->flush();
+
+            return;
+        }
+
         $page = new MonitoredPage();
         $page->setUrl($message->getUrl());
         $page->setHash($message->getHash());
