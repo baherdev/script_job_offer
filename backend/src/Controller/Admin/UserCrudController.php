@@ -6,6 +6,7 @@ use App\Entity\User;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Option\TextAlign;
 use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
 use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
@@ -74,8 +75,10 @@ class UserCrudController extends AbstractCrudController
             $blackListedEnterprises->setTemplatePath('admin/field/black_listed_enterprises.html.twig');
         }
         yield $blackListedEnterprises;
-        $searchQueries = AssociationField::new('searchQueries', 'Recherches')->hideOnForm();
-        if ($pageName === Crud::PAGE_DETAIL) {
+        $searchQueries = AssociationField::new('searchQueries', 'Recherches')
+            ->hideOnForm()
+            ->setTextAlign(TextAlign::LEFT);
+        if (in_array($pageName, [Crud::PAGE_INDEX, Crud::PAGE_DETAIL], true)) {
             $searchQueries
                 ->setTemplatePath('admin/field/search_queries.html.twig')
                 ->formatValue(static function (mixed $value, User $user): array {
