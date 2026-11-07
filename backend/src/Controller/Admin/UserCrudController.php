@@ -74,8 +74,20 @@ class UserCrudController extends AbstractCrudController
             $blackListedEnterprises->setTemplatePath('admin/field/black_listed_enterprises.html.twig');
         }
         yield $blackListedEnterprises;
-        yield AssociationField::new('searchQueries', 'Recherches')->hideOnForm();
-        yield AssociationField::new('interestedSearchQueries', 'Recherches suivies')->onlyOnDetail();
+        $searchQueries = AssociationField::new('searchQueries', 'Recherches')->hideOnForm();
+        if ($pageName === Crud::PAGE_DETAIL) {
+            $searchQueries
+                ->setTemplatePath('admin/field/search_queries.html.twig')
+                ->formatValue(static function (mixed $value, User $user): array {
+                    $queries = [];
+                    foreach ([...$user->getSearchQueries(), ...$user->getInterestedSearchQueries()] as $searchQuery) {
+                        $queries[$searchQuery->getId() ?? spl_object_id($searchQuery)] = $searchQuery;
+                    }
+
+                    return array_values($queries);
+                });
+        }
+        yield $searchQueries;
         yield AssociationField::new('jobApplications', 'Candidatures')->hideOnForm();
     }
 

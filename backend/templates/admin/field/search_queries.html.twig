@@ -1,0 +1,10 @@
+{% if field.formattedValue is empty %}
+    <span class="text-body-secondary">—</span>
+{% else %}
+    {% for searchQuery in field.formattedValue %}
+        <div>
+            {{ searchQuery.keyword }} — {{ searchQuery.location }}
+            {%- if searchQuery.distance is not null %} ({{ searchQuery.distance }} miles){% endif -%}
+        </div>
+    {% endfor %}
+{% endif %}
