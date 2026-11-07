@@ -31,13 +31,20 @@ final class CreateJobOfferCreatesJobApplicationTest extends WebTestCase
         $user->setPassword('hashed-password');
         $user->setRoles(['ROLE_USER']);
 
+        $interestedUser = new User();
+        $interestedUser->setEmail('interested@example.com');
+        $interestedUser->setPassword('hashed-password');
+        $interestedUser->setRoles(['ROLE_USER']);
+
         $searchQuery = new SearchQuery();
         $searchQuery->setKeyword('drupal');
         $searchQuery->setLocation('Switzerland');
         $searchQuery->setIsActive(true);
         $searchQuery->setCreatedBy($user);
+        $searchQuery->addInterestedUser($interestedUser);
 
         $entityManager->persist($user);
+        $entityManager->persist($interestedUser);
         $entityManager->persist($searchQuery);
         $entityManager->flush();
 
@@ -60,7 +67,7 @@ final class CreateJobOfferCreatesJobApplicationTest extends WebTestCase
         self::assertCount(1, $this->transport('async')->getSent());
 
         $this->consumeQueues();
-        self::assertCount(1, $this->transport('job_applications')->getAcknowledged());
+        self::assertCount(2, $this->transport('job_applications')->getAcknowledged());
 
         $entityManager->clear();
         $offer = $entityManager->getRepository(JobOffer::class)->findOneBy(['url' => self::OFFER_URL]);
@@ -69,8 +76,15 @@ final class CreateJobOfferCreatesJobApplicationTest extends WebTestCase
         self::assertSame($searchQuery->getId(), $offer->getSearchQueries()->first()->getId());
 
         $applications = $entityManager->getRepository(JobApplication::class)->findBy(['jobOffer' => $offer]);
-        self::assertCount(1, $applications);
-        self::assertSame($user->getId(), $applications[0]->getUser()?->getId());
+        self::assertCount(2, $applications);
+        $applicationUserIds = array_map(
+            static fn (JobApplication $application): ?int => $application->getUser()?->getId(),
+            $applications,
+        );
+        sort($applicationUserIds);
+        $expectedUserIds = [$user->getId(), $interestedUser->getId()];
+        sort($expectedUserIds);
+        self::assertSame($expectedUserIds, $applicationUserIds);
         self::assertSame(0, $applications[0]->getApplicationStatus());
 
         $bus = static::getContainer()->get(MessageBusInterface::class);
@@ -83,7 +97,7 @@ final class CreateJobOfferCreatesJobApplicationTest extends WebTestCase
 
         $entityManager->clear();
         $applications = $entityManager->getRepository(JobApplication::class)->findBy(['jobOffer' => $offer->getId()]);
-        self::assertCount(1, $applications);
+        self::assertCount(2, $applications);
     }
 
     private function entityManager(): EntityManagerInterface

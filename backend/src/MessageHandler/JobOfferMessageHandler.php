@@ -79,15 +79,27 @@ class JobOfferMessageHandler
 
     private function queueJobApplication(JobOffer $offer, ?SearchQuery $searchQuery): void
     {
-        $user = $searchQuery?->getCreatedBy();
-        if ($offer->getId() === null || $user?->getId() === null) {
+        if ($offer->getId() === null || !$searchQuery instanceof SearchQuery) {
             return;
         }
 
-        $this->bus->dispatch(new JobApplicationMessage(
-            jobOfferId: $offer->getId(),
-            userId: $user->getId(),
-        ));
+        $users = [];
+        $owner = $searchQuery->getCreatedBy();
+        if ($owner?->getId() !== null) {
+            $users[$owner->getId()] = $owner;
+        }
+        foreach ($searchQuery->getInterestedUsers() as $user) {
+            if ($user->getId() !== null) {
+                $users[$user->getId()] = $user;
+            }
+        }
+
+        foreach ($users as $user) {
+            $this->bus->dispatch(new JobApplicationMessage(
+                jobOfferId: $offer->getId(),
+                userId: $user->getId(),
+            ));
+        }
     }
 
     #[AsMessageHandler]
