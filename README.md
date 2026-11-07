@@ -294,6 +294,19 @@ Liste les requêtes de recherche actives. Accessible sans authentification (`/ap
 
 Chaque élément contient `id`, `keyword`, `location`, `distance`, `isActive`, `createdAt` (format ATOM) et `createdById`.
 
+### `MonitoredPageController` — `src/Controller/MonitoredPageController.php`
+
+Liste les pages surveillées et reçoit les hash calculés par le scraper. Accessible sans authentification (`/api` est public dans `security.yaml`).
+
+| Route                    | Méthode | Accès  | Description                                                                 |
+|--------------------------|---------|--------|-----------------------------------------------------------------------------|
+| `GET /api/monitored-pages`  | GET  | PUBLIC | Retourne toutes les `MonitoredPage`, triées par `id`                        |
+| `POST /api/monitored-pages` | POST | PUBLIC | Reçoit une liste de pages et place chacune dans la file `monitored_pages`  |
+
+`GET` renvoie pour chaque page `id`, `url`, `hash` (nullable) et `userId`.
+
+`POST` attend un JSON `{ "monitoredPages": [ { "url", "hash", "userId" } ] }`. `url` et `hash` sont des chaînes non vides (`url` ≤ 2048 caractères, `hash` ≤ 255), et `userId` est numérique. Une réponse `202` indique le nombre de messages envoyés. Un JSON invalide ou une liste absente renvoie `400` ; un champ invalide renvoie `422`. Le worker met à jour le hash d'une page existante pour le même utilisateur et la même URL, ou crée la page sinon.
+
 ### 2. `SecurityController` — `src/Controller/SecurityController.php`
 
 Généré par `make:security:form-login`. Gère la page de connexion.
@@ -347,6 +360,26 @@ class JobOfferMessageHandler
     }
 }
 ```
+
+### 3. `JobOfferUpdateMessage` — `src/Message/JobOfferUpdateMessage.php`
+
+DTO envoyé sur la file `async` (`job_offers`) par `PUT /api/job-offers`. Contient `id`, `description` et `logoUrl` (optionnel). Il est traité par `JobOfferMessageHandler::updateDescription` : la description et `processedAt` de l'offre sont mis à jour. Si `logoUrl` est renseigné, le logo est téléchargé et associé à l'entreprise de l'offre. L'absence de l'offre, ou d'une entreprise alors qu'un logo est demandé, rejette le message sans nouvel essai.
+
+### 4. `JobApplicationMessage` — `src/Message/JobApplicationMessage.php`
+
+DTO envoyé sur la file `job_applications` quand une offre est rattachée à une recherche. `JobOfferMessageHandler` en émet un pour le propriétaire de la recherche et pour chaque utilisateur intéressé. Contient `jobOfferId`, `userId`, `applicationStatus` (défaut `0`), `applicationDate`, `desiredSalaryAmount` et `desiredSalaryCurrency` (défaut `0`).
+
+### 5. `JobApplicationMessageHandler` — `src/MessageHandler/JobApplicationMessageHandler.php`
+
+Crée une `JobApplication` pour le couple offre/utilisateur du message. Le message est ignoré si l'offre ou l'utilisateur est introuvable, si une candidature existe déjà, ou si l'entreprise de l'offre est dans la liste noire de l'utilisateur.
+
+### 6. `MonitoredPageMessage` — `src/Message/MonitoredPageMessage.php`
+
+DTO envoyé sur la file `monitored_pages` par `POST /api/monitored-pages`. Contient `url`, `hash` et `userId`.
+
+### 7. `MonitoredPageMessageHandler` — `src/MessageHandler/MonitoredPageMessageHandler.php`
+
+Enregistre le hash d'une page surveillée. Si l'utilisateur est introuvable, le message est rejeté sans nouvel essai. Pour une page déjà existante avec la même URL et le même utilisateur, seul le hash est mis à jour. Un `UserFlashMessage` est créé uniquement lorsque l'ancien hash n'était pas vide et qu'il a changé. Le lien de l'URL y est un lien HTML. Un hash identique ne modifie rien. Sinon, une nouvelle `MonitoredPage` est créée.
 
 ---
 
