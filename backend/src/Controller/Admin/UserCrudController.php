@@ -3,6 +3,8 @@
 namespace App\Controller\Admin;
 
 use App\Entity\User;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
 use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
@@ -10,9 +12,9 @@ use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
@@ -35,13 +37,25 @@ class UserCrudController extends AbstractCrudController
         return $crud
             ->setEntityLabelInSingular('User')
             ->setEntityLabelInPlural('Users')
-            ->setDefaultSort(['email' => 'ASC']);
+            ->setDefaultSort(['email' => 'ASC'])
+            ->setDefaultRowAction(Action::DETAIL);
+    }
+
+    public function configureActions(Actions $actions): Actions
+    {
+        return $actions
+            ->add(Crud::PAGE_INDEX, Action::DETAIL)
+            ->update(Crud::PAGE_INDEX, Action::DETAIL, static function (Action $action): Action {
+                return $action->setLabel('View')->asTextLink();
+            })
+            ->reorder(Crud::PAGE_INDEX, [Action::DETAIL, Action::EDIT, Action::DELETE]);
     }
 
     public function configureFields(string $pageName): iterable
     {
         yield IdField::new('id')->hideOnForm();
-        yield EmailField::new('email', 'Email');
+        yield TextField::new('email', 'Email')
+            ->setFormType(EmailType::class);
         yield ChoiceField::new('roles', 'Rôles')
             ->setChoices([
                 'User' => 'ROLE_USER',
@@ -57,6 +71,7 @@ class UserCrudController extends AbstractCrudController
             ->setFormTypeOption('attr', ['autocomplete' => 'new-password']);
         yield AssociationField::new('blackListedEnterprises', 'Black Listed Enterprises');
         yield AssociationField::new('searchQueries', 'Recherches')->hideOnForm();
+        yield AssociationField::new('interestedSearchQueries', 'Recherches suivies')->onlyOnDetail();
         yield AssociationField::new('jobApplications', 'Candidatures')->hideOnForm();
     }
 
