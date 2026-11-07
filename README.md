@@ -4,7 +4,7 @@ Application complète de scraping d'offres d'emploi avec authentification utilis
 
 ---
 
-## Stack technique
+## I. Stack technique
 
 | Composant     | Version          |
 |---------------|------------------|
@@ -18,7 +18,7 @@ Application complète de scraping d'offres d'emploi avec authentification utilis
 
 ---
 
-## Démarrage rapide
+## II. Démarrage rapide
 
 ### Prérequis
 
@@ -83,7 +83,7 @@ docker compose exec scraper python3 /app/scrape_from_db.py
 
 ---
 
-## Comment ça fonctionne — Vue d'ensemble
+## III. Comment ça fonctionne — Vue d'ensemble
 
 L'application repose sur trois piliers :
 
@@ -93,7 +93,7 @@ L'application repose sur trois piliers :
 
 ---
 
-## Architecture détaillée
+## IV. Architecture détaillée
 
 ```
 ┌──────────────────────────────────────────────────┐
@@ -135,7 +135,7 @@ L'application repose sur trois piliers :
 
 ---
 
-## Pourquoi RabbitMQ ? Le traitement asynchrone
+## V. Pourquoi RabbitMQ ? Le traitement asynchrone
 
 Sans file de messages, l'API devrait scraper LinkedIn **et** enregistrer en base **dans la même requête HTTP**. Si LinkedIn est lent, si la base est surchargée, ou si 500 offres arrivent d'un coup, l'utilisateur attend — ou la requête timeout.
 
@@ -152,9 +152,9 @@ Ce pattern s'appelle **Producer / Consumer** :
 
 ---
 
-## Entités Doctrine (base de données)
+## VI. Entités Doctrine (base de données)
 
-### `JobOffer` — `src/Entity/JobOffer.php`
+### 1. `JobOffer` — `src/Entity/JobOffer.php`
 
 Représente une offre d'emploi scrappée et persistée.
 
@@ -170,7 +170,7 @@ Représente une offre d'emploi scrappée et persistée.
 | `createdAt`   | DateTimeImmutable     | Date de création (set par le handler)    |
 | `processedAt` | DateTimeImmutable     | Date de traitement par le worker         |
 
-### `User` — `src/Entity/User.php`
+### 2. `User` — `src/Entity/User.php`
 
 Utilisateur de l'application (authentification Symfony Security).
 
@@ -182,7 +182,7 @@ Utilisateur de l'application (authentification Symfony Security).
 | `password`       | string            | Mot de passe hashé (bcrypt)            |
 | `searchQueries`  | OneToMany         | Requêtes de recherche de l'utilisateur |
 
-### `SearchQuery` — `src/Entity/SearchQuery.php`
+### 3. `SearchQuery` — `src/Entity/SearchQuery.php`
 
 Requête de recherche enregistrée par un utilisateur. Le cron s'en sert pour lancer les scrapings automatiques 3x/jour. Chaque `SearchQuery` active génère une exécution du scraper LinkedIn avec ses paramètres.
 
@@ -198,9 +198,9 @@ Requête de recherche enregistrée par un utilisateur. Le cron s'en sert pour la
 
 ---
 
-## Contrôleurs
+## VII. Contrôleurs
 
-### `JobOfferController` — `src/Controller/JobOfferController.php`
+### 1. `JobOfferController` — `src/Controller/JobOfferController.php`
 
 Point d'entrée de l'API REST. Accessible sans authentification (`/api` est public dans `security.yaml`).
 
@@ -218,7 +218,7 @@ Liste les requêtes de recherche actives. Accessible sans authentification (`/ap
 
 Chaque élément contient `id`, `keyword`, `location`, `distance`, `isActive`, `createdAt` (format ATOM) et `createdById`.
 
-### `SecurityController` — `src/Controller/SecurityController.php`
+### 2. `SecurityController` — `src/Controller/SecurityController.php`
 
 Généré par `make:security:form-login`. Gère la page de connexion.
 
@@ -227,7 +227,7 @@ Généré par `make:security:form-login`. Gère la page de connexion.
 | `/login`  | GET/POST | Formulaire de connexion            |
 | `/logout` | GET      | Déconnexion (géré par le firewall) |
 
-### `DashboardController` — `src/Controller/Admin/DashboardController.php`
+### 3. `DashboardController` — `src/Controller/Admin/DashboardController.php`
 
 Tableau de bord EasyAdmin v5. Accessible uniquement aux utilisateurs connectés (`ROLE_USER`).
 
@@ -235,23 +235,23 @@ Tableau de bord EasyAdmin v5. Accessible uniquement aux utilisateurs connectés 
 |----------|-----------|----------------------------|
 | `/admin` | ROLE_USER | Interface d'administration |
 
-### `JobOfferCrudController` — `src/Controller/Admin/JobOfferCrudController.php`
+### 4. `JobOfferCrudController` — `src/Controller/Admin/JobOfferCrudController.php`
 
 CRUD EasyAdmin pour les offres d'emploi : liste, détail, édition, suppression.
 
-### `SearchQueryCrudController` — `src/Controller/Admin/SearchQueryCrudController.php`
+### 5. `SearchQueryCrudController` — `src/Controller/Admin/SearchQueryCrudController.php`
 
 CRUD EasyAdmin pour les requêtes de recherche. Permet à l'admin de créer, activer/désactiver et supprimer des recherches planifiées. Les requêtes avec `isActive = true` sont automatiquement récupérées par le cron.
 
 ---
 
-## Messages Symfony Messenger
+## VIII. Messages Symfony Messenger
 
-### `JobOfferMessage` — `src/Message/JobOfferMessage.php`
+### 1. `JobOfferMessage` — `src/Message/JobOfferMessage.php`
 
 Simple objet PHP (DTO) transporté dans la file RabbitMQ. Contient les données brutes d'une offre : `title`, `company`, `location`, `description`, `url`.
 
-### `JobOfferMessageHandler` — `src/MessageHandler/JobOfferMessageHandler.php`
+### 2. `JobOfferMessageHandler` — `src/MessageHandler/JobOfferMessageHandler.php`
 
 Déclenché automatiquement par le worker quand un `JobOfferMessage` sort de la file. Crée une entité `JobOffer`, définit les dates, et persiste en base via Doctrine.
 
@@ -274,9 +274,9 @@ class JobOfferMessageHandler
 
 ---
 
-## Commande Symfony — Debug des recherches actives
+## IX. Commande Symfony — Debug des recherches actives
 
-### `AppScrapeActiveQueriesCommand` — `src/Command/AppScrapeActiveQueriesCommand.php`
+### 1. `AppScrapeActiveQueriesCommand` — `src/Command/AppScrapeActiveQueriesCommand.php`
 
 Lance `linkedin_job_search.py` une fois. Le script lit les recherches actives sur `GET /api/search-queries/active`, puis ouvre la page LinkedIn de chacune.
 
@@ -295,7 +295,7 @@ Le container PHP fournit `python` et monte `./scripts` sur `/app`, donc cette co
 
 ---
 
-## Authentification (Symfony Security)
+## X. Authentification (Symfony Security)
 
 La sécurité est configurée dans `config/packages/security.yaml`.
 
@@ -323,9 +323,9 @@ VALUES ('admin@example.com', '["ROLE_USER"]', '$2y$13$...');
 
 ---
 
-## Scripts Python — Scraping LinkedIn
+## XI. Scripts Python — Scraping LinkedIn
 
-### `scripts/linkedin_job_search.py` — Scraper de base
+### 1. `scripts/linkedin_job_search.py` — Scraper de base
 
 Charge les recherches actives avec `GET /api/search-queries/active`, ouvre la page LinkedIn de chacune (`keyword`, `location`, `distance`) et envoie les offres au backend. Utilisable manuellement ou appelé par `scrape_from_db.py`.
 
@@ -369,7 +369,7 @@ Pour tester manuellement :
 docker compose exec scraper python3 /app/scrape_from_db.py
 ```
 
-### `scripts/linkedin_job_description.py` — Description de la première offre
+### 2. `scripts/linkedin_job_description.py` — Description de la première offre
 
 Appelle `GET /api/job-offers/without-description`, prend la première offre, ouvre son URL LinkedIn et extrait la description : d'abord le `div` dont l'id commence par `JobDetails_AboutTheJob`, sinon `div.description__text` sur la page publique. Le texte est ensuite enregistré avec `PUT /api/job-offers` (`id` et `description`). Depuis le container `scraper`, l'URL par défaut `http://nginx/api/job-offers/without-description` passe par nginx ; `127.0.0.1` désigne le container lui-même.
 
@@ -379,7 +379,7 @@ docker compose exec scraper python3 /app/linkedin_job_description.py
 
 ---
 
-## Cron automatique (container Docker)
+## XII. Cron automatique (container Docker)
 
 Le service `scraper` dans `docker-compose.yml` est un container Python avec `cron` intégré. Il tourne en arrière-plan et exécute `scrape_from_db.py` 3x/jour selon la planification dans `docker/scraper/crontab`.
 
@@ -400,7 +400,7 @@ Pour gérer les recherches planifiées : va dans EasyAdmin → **Search Queries*
 
 ---
 
-## Structure du projet
+## XIII. Structure du projet
 
 ```
 script_job_offer/
@@ -450,7 +450,7 @@ script_job_offer/
 
 ---
 
-## API — POST /api/job-offers
+## XIV. API — POST /api/job-offers
 
 ```bash
 curl -X POST http://localhost:8080/api/job-offers \
@@ -480,7 +480,7 @@ curl -X POST http://localhost:8080/api/job-offers \
 
 ---
 
-## Tests
+## XV. Tests
 
 Le test d'intégration `tests/Integration/CreateJobOfferCreatesJobApplicationTest.php` reproduit la création d'une offre via `POST /api/job-offers`. Il vérifie que l'offre est liée à la recherche, puis qu'une candidature est créée pour l'utilisateur propriétaire de cette recherche. Les files `async` et `job_applications` sont en mémoire, et Doctrine utilise la base `job_scraper_test` : le worker et la base de développement ne sont pas touchés.
 
@@ -492,7 +492,7 @@ docker compose exec -e APP_ENV=test php php bin/phpunit tests/Integration/Create
 
 ---
 
-## Commandes utiles
+## XVI. Commandes utiles
 
 ```bash
 # Lancer le worker manuellement
@@ -523,7 +523,7 @@ docker compose exec mysql mysql -uroot -proot job_scraper \
 
 ---
 
-## Variables d'environnement
+## XVII. Variables d'environnement
 
 Fichier `backend/.env.local` (non versionné) :
 
@@ -536,7 +536,7 @@ MESSENGER_TRANSPORT_DSN=amqp://guest:guest@rabbitmq:5672/%2f/job_offers
 
 ---
 
-## Auteur
+## XVIII. Auteur
 
 **Baher Rais** — [github.com/baherdev](https://github.com/baherdev)  
 Freelancemodule Sàrl — Orbe, Suisse
