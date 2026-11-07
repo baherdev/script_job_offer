@@ -58,12 +58,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\JoinTable(name: 'user_black_listed_enterprise')]
     private Collection $blackListedEnterprises;
 
+    /**
+     * @var Collection<int, MonitoredPage>
+     */
+    #[ORM\OneToMany(targetEntity: MonitoredPage::class, mappedBy: 'user', orphanRemoval: true)]
+    private Collection $monitoredPages;
+
     public function __construct()
     {
         $this->searchQueries = new ArrayCollection();
         $this->interestedSearchQueries = new ArrayCollection();
         $this->jobApplications = new ArrayCollection();
         $this->blackListedEnterprises = new ArrayCollection();
+        $this->monitoredPages = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -142,6 +149,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $data["\0" . self::class . "\0interestedSearchQueries"],
             $data["\0" . self::class . "\0jobApplications"],
             $data["\0" . self::class . "\0blackListedEnterprises"],
+            $data["\0" . self::class . "\0monitoredPages"],
         );
 
         return $data;
@@ -265,6 +273,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if ($this->blackListedEnterprises->removeElement($enterprise)) {
             $enterprise->removeBlackListingUser($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, MonitoredPage>
+     */
+    public function getMonitoredPages(): Collection
+    {
+        return $this->monitoredPages;
+    }
+
+    public function addMonitoredPage(MonitoredPage $monitoredPage): static
+    {
+        if (!$this->monitoredPages->contains($monitoredPage)) {
+            $this->monitoredPages->add($monitoredPage);
+            $monitoredPage->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMonitoredPage(MonitoredPage $monitoredPage): static
+    {
+        if ($this->monitoredPages->removeElement($monitoredPage)) {
+            if ($monitoredPage->getUser() === $this) {
+                $monitoredPage->setUser(null);
+            }
         }
 
         return $this;
