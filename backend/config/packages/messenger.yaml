@@ -17,8 +17,17 @@ framework:
                         type: direct
                     queues:
                         job_applications: ~
+            monitored_pages:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    exchange:
+                        name: monitored_pages
+                        type: direct
+                    queues:
+                        monitored_pages: ~
 
         routing:
             App\Message\JobOfferMessage: async
             App\Message\JobOfferUpdateMessage: async
             App\Message\JobApplicationMessage: job_applications
+            App\Message\MonitoredPageMessage: monitored_pages

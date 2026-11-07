@@ -3,3 +3,4 @@ framework:
         transports:
             async: 'in-memory://'
             job_applications: 'in-memory://'
+            monitored_pages: 'in-memory://'
