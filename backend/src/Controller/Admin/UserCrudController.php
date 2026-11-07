@@ -69,7 +69,11 @@ class UserCrudController extends AbstractCrudController
             ->onlyOnForms()
             ->setHelp($pageName === Crud::PAGE_EDIT ? 'Laisser vide pour conserver le mot de passe actuel.' : '')
             ->setFormTypeOption('attr', ['autocomplete' => 'new-password']);
-        yield AssociationField::new('blackListedEnterprises', 'Black Listed Enterprises');
+        $blackListedEnterprises = AssociationField::new('blackListedEnterprises', 'Black Listed Enterprises');
+        if ($pageName === Crud::PAGE_DETAIL) {
+            $blackListedEnterprises->setTemplatePath('admin/field/black_listed_enterprises.html.twig');
+        }
+        yield $blackListedEnterprises;
         yield AssociationField::new('searchQueries', 'Recherches')->hideOnForm();
         yield AssociationField::new('interestedSearchQueries', 'Recherches suivies')->onlyOnDetail();
         yield AssociationField::new('jobApplications', 'Candidatures')->hideOnForm();
