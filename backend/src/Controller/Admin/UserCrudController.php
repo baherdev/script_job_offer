@@ -88,7 +88,11 @@ class UserCrudController extends AbstractCrudController
                 });
         }
         yield $searchQueries;
-        yield AssociationField::new('jobApplications', 'Candidatures')->hideOnForm();
+        $jobApplications = AssociationField::new('jobApplications', 'Candidatures')->hideOnForm();
+        if ($pageName === Crud::PAGE_DETAIL) {
+            $jobApplications->setTemplatePath('admin/field/job_applications.html.twig');
+        }
+        yield $jobApplications;
     }
 
     public function createNewFormBuilder(EntityDto $entityDto, KeyValueStore $formOptions, AdminContext $context): FormBuilderInterface

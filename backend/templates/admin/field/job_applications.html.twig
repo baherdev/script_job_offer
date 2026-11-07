@@ -1,0 +1,11 @@
+{% if field.value is empty %}
+    <span class="text-body-secondary">—</span>
+{% else %}
+    {% for application in field.value %}
+        {% set offer = application.jobOffer %}
+        <div>
+            {{ offer.title }}
+            {%- if offer.enterprise %} — {{ offer.enterprise.label }}{% endif -%}
+        </div>
+    {% endfor %}
+{% endif %}
