@@ -486,6 +486,26 @@ Appelle `GET /api/job-offers/without-description`, prend la première offre, ouv
 docker compose exec scraper python3 /app/linkedin_job_description.py
 ```
 
+### 3. `scripts/scrape_monitored_pages.py` — Hash des pages surveillées
+
+Charge les pages avec `GET /api/monitored-pages`, télécharge chaque URL et calcule le SHA-256 du corps de la réponse. Les pages sans `url` ou `userId`, ou dont le téléchargement ne renvoie pas HTTP 200, sont ignorées. Les hash calculés sont envoyés en un seul `POST /api/monitored-pages` (`url`, `hash`, `userId`). Un hash identique à celui déjà stocké est quand même renvoyé. Le worker met alors à jour la page existante pour ce couple utilisateur et URL.
+
+```bash
+# Dans le container scraper (URL par défaut : http://nginx/api/monitored-pages)
+docker compose exec scraper python3 /app/scrape_monitored_pages.py
+
+# Calcul seul, sans envoi au backend
+docker compose exec scraper python3 /app/scrape_monitored_pages.py --no-send
+
+# Depuis la machine hôte
+python scrape_monitored_pages.py --backend http://localhost:8080/api/monitored-pages
+```
+
+| Argument    | Défaut                                | Description                                      |
+|-------------|---------------------------------------|--------------------------------------------------|
+| `--backend` | `http://nginx/api/monitored-pages`    | URL utilisée pour le GET et le POST              |
+| `--no-send` | —                                     | Calcule les hash sans les envoyer au backend    |
+
 ---
 
 ## XII. Cron automatique (container Docker)
