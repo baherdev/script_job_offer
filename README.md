@@ -196,6 +196,82 @@ Requête de recherche enregistrée par un utilisateur. Le cron s'en sert pour la
 | `createdAt` | DateTimeImmutable | Date de création (auto via constructeur)  |
 | `user`      | ManyToOne → User  | Utilisateur propriétaire                  |
 
+### 4. `Enterprise` — `src/Entity/Enterprise.php`
+
+Entreprise rattachée aux offres et aux contacts. Un utilisateur peut la placer sur sa liste noire.
+
+| Champ                | Type                         | Description                                      |
+|----------------------|------------------------------|--------------------------------------------------|
+| `id`                 | int (auto)                   | Identifiant unique                               |
+| `label`              | string(255)                  | Nom de l'entreprise                              |
+| `website`            | string(255)                  | Site web                                         |
+| `street`             | string(255)                  | Rue                                              |
+| `zipCode`            | string(255)                  | Code postal                                      |
+| `city`               | string(255)                  | Ville                                            |
+| `country`            | string(255)                  | Pays                                             |
+| `logo`               | OneToOne → FileReference, null | Logo de l'entreprise                           |
+| `jobOffers`          | OneToMany → JobOffer         | Offres liées                                     |
+| `contacts`           | OneToMany → Contact          | Contacts de l'entreprise                         |
+| `blackListingUsers`  | ManyToMany → User            | Utilisateurs qui ont mis l'entreprise en liste noire |
+
+### 5. `FileReference` — `src/Entity/FileReference.php`
+
+Référence vers un fichier stocké (logo, CV, lettre de motivation, diplôme, pièce jointe).
+
+| Champ          | Type                    | Description                                      |
+|----------------|-------------------------|--------------------------------------------------|
+| `id`           | int (auto)              | Identifiant unique                               |
+| `fileName`     | string(255)             | Nom d'origine du fichier                         |
+| `filePath`     | string(255)             | Chemin de stockage                               |
+| `creationDate` | date                    | Date de création (aujourd'hui par défaut)        |
+| `enterprise`   | OneToOne → Enterprise, null | Entreprise dont ce fichier est le logo       |
+
+### 6. `JobApplication` — `src/Entity/JobApplication.php`
+
+Candidature d'un utilisateur à une offre. Une candidature n'est pas créée si l'entreprise de l'offre est en liste noire pour cet utilisateur.
+
+| Champ                    | Type                         | Description                                                                 |
+|--------------------------|------------------------------|-----------------------------------------------------------------------------|
+| `id`                     | int (auto)                   | Identifiant unique                                                          |
+| `jobOffer`               | ManyToOne → JobOffer         | Offre concernée                                                             |
+| `user`                   | ManyToOne → User             | Candidat                                                                    |
+| `applicationStatus`      | int, défaut `0`              | `0` non envoyée, `1` envoyée, `2`–`4` entretiens, `5` acceptée, `6` refusée, `7` annulée |
+| `applicationDate`        | date, null                   | Date d'envoi de la candidature                                              |
+| `interviewDate1`         | date, null                   | Date du premier entretien                                                   |
+| `interviewDate2`         | date, null                   | Date du deuxième entretien                                                  |
+| `interviewDate3`         | date, null                   | Date du troisième entretien                                                 |
+| `rejectionDate`          | date, null                   | Date de refus                                                               |
+| `cancellationDate`       | date, null                   | Date d'annulation                                                           |
+| `firstStartDate`         | date, null                   | Date de prise de poste                                                      |
+| `desiredSalaryAmount`    | int, null                    | Salaire souhaité                                                            |
+| `desiredSalaryCurrency`  | int, défaut `0`              | `0` NA, `1` EUR, `2` CHF, `3` TND                                           |
+| `coverLetter`            | ManyToOne → FileReference, null | Lettre de motivation                                                     |
+| `cv`                     | ManyToOne → FileReference, null | CV                                                                       |
+| `referenceFiles`         | ManyToMany → FileReference   | Pièces de référence                                                         |
+| `diplomas`               | ManyToMany → FileReference   | Diplômes                                                                    |
+| `additionalFiles`        | ManyToMany → FileReference   | Autres pièces jointes                                                       |
+
+### 7. `MonitoredPage` — `src/Entity/MonitoredPage.php`
+
+Page web suivie pour un utilisateur. Le scraper en calcule le SHA-256. Le hash est optionnel à la création : le premier hash enregistré ne déclenche pas d'alerte. Un changement de hash ensuite crée un `UserFlashMessage` pour l'utilisateur.
+
+| Champ   | Type                | Description                                              |
+|---------|---------------------|----------------------------------------------------------|
+| `id`    | int (auto)          | Identifiant unique                                       |
+| `url`   | string(2048)        | URL surveillée                                           |
+| `hash`  | string(255), null   | SHA-256 du contenu, vide tant que la page n'a pas été lue |
+| `user`  | ManyToOne → User    | Propriétaire. La suppression de l'utilisateur supprime ses pages |
+
+### 8. `UserFlashMessage` — `src/Entity/UserFlashMessage.php`
+
+Message en attente pour un utilisateur. À sa prochaine visite de l'administration, le message est affiché une fois comme alerte, puis supprimé.
+
+| Champ     | Type             | Description                                      |
+|-----------|------------------|--------------------------------------------------|
+| `id`      | int (auto)       | Identifiant unique                               |
+| `message` | text             | Texte de l'alerte, l'URL y est un lien HTML      |
+| `user`    | ManyToOne → User | Destinataire. Supprimé en cascade avec l'utilisateur |
+
 ---
 
 ## VII. Contrôleurs
