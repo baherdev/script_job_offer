@@ -29,7 +29,9 @@ class MonitoredPageCrudController extends AbstractCrudController
     {
         yield IdField::new('id')->hideOnForm();
         yield UrlField::new('url', 'URL');
-        yield TextField::new('hash', 'Hash');
+        yield TextField::new('hash', 'Hash')
+            ->setRequired(false)
+            ->setFormTypeOption('empty_data', null);
         yield AssociationField::new('user', 'User');
     }
 }

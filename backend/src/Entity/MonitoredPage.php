@@ -16,7 +16,7 @@ class MonitoredPage
     #[ORM\Column(length: 2048)]
     private ?string $url = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $hash = null;
 
     #[ORM\ManyToOne(inversedBy: 'monitoredPages')]
@@ -45,7 +45,7 @@ class MonitoredPage
         return $this->hash;
     }
 
-    public function setHash(string $hash): static
+    public function setHash(?string $hash): static
     {
         $this->hash = $hash;
 

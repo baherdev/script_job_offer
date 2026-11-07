@@ -27,12 +27,15 @@ class MonitoredPageMessageHandler
             'user' => $user,
         ]);
         if ($page instanceof MonitoredPage) {
-            if ($page->getHash() === $message->getHash()) {
+            $previousHash = $page->getHash();
+            if ($previousHash === $message->getHash()) {
                 return;
             }
 
             $page->setHash($message->getHash());
-            $this->addFlashMessage($user, $page);
+            if ($previousHash !== null && $previousHash !== '') {
+                $this->addFlashMessage($user, $page);
+            }
             $this->em->flush();
 
             return;
@@ -49,11 +52,13 @@ class MonitoredPageMessageHandler
 
     private function addFlashMessage(User $user, MonitoredPage $page): void
     {
+        $url = htmlspecialchars((string) $page->getUrl(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $flashMessage = new UserFlashMessage();
         $flashMessage->setUser($user);
         $flashMessage->setMessage(sprintf(
-            'A monitored page has changed. Please check %s.',
-            htmlspecialchars((string) $page->getUrl(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+            'A monitored page has changed. Please check <a href="%s" target="_blank" rel="noopener noreferrer">%s</a>.',
+            $url,
+            $url,
         ));
 
         $this->em->persist($flashMessage);
